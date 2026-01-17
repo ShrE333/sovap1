@@ -37,8 +37,9 @@ export default function AdminPage() {
         }
     };
 
-    const totalLicenses = colleges.reduce((sum, c) => sum + c.license_count, 0);
-    const totalStudents = colleges.reduce((sum, c) => sum + (c.studentCount || 0), 0);
+    const collegesArray = Array.isArray(colleges) ? colleges : [];
+    const totalLicenses = collegesArray.reduce((sum, c) => sum + (c?.license_count || 0), 0);
+    const totalStudents = collegesArray.reduce((sum, c) => sum + (c?.studentCount || 0), 0);
 
     return (
         <div className={styles.adminContainer}>
