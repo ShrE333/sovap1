@@ -14,6 +14,17 @@ interface LearningContextType {
 
 const LearningStateContext = createContext<LearningContextType | undefined>(undefined);
 
+const defaultState: StudentLearningState = {
+    studentId: '',
+    courseId: '',
+    topicConfidence: {},
+    topicMastery: {},
+    attemptHistory: [],
+    labStatus: {},
+    lastActive: '',
+    currentPath: [],
+};
+
 export function LearningStateProvider({ children }: { children: React.ReactNode }) {
     const [state, setState] = useState<StudentLearningState | null>(null);
     const [currentTopic, setCurrentTopic] = useState<Topic | null>(null);
@@ -54,7 +65,7 @@ export function LearningStateProvider({ children }: { children: React.ReactNode 
 
     return (
         <LearningStateContext.Provider value={{
-            state: state || {} as any,
+            state: state || defaultState,
             currentTopic,
             submitProgress,
             isLoading: !state

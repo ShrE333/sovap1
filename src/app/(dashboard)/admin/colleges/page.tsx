@@ -191,7 +191,7 @@ export default function AdminCollegesPage() {
                                         </div>
                                         <div className={styles.statItem}>
                                             <span className={styles.label}>Students:</span>
-                                            <span className={styles.value}>{college.studentsCount || 0}</span>
+                                            <span className={styles.value}>{college.studentCount || 0}</span>
                                         </div>
                                         <div className={styles.statItem}>
                                             <span className={styles.label}>Courses:</span>
@@ -351,7 +351,7 @@ export default function AdminCollegesPage() {
                         <div className={styles.statsGrid} style={{ marginBottom: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
                             <div className={styles.statItem}>
                                 <span className={styles.label}>Active Students</span>
-                                <span className={styles.value}>{selectedCollege.studentsCount || 0}</span>
+                                <span className={styles.value}>{selectedCollege.studentCount || 0}</span>
                             </div>
                             <div className={styles.statItem}>
                                 <span className={styles.label}>Active Teachers</span>

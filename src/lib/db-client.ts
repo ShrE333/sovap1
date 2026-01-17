@@ -55,14 +55,14 @@ export const dbClient = {
             // Simulate joining with stats in mock mode
             return db.colleges.map(college => {
                 const teachersCount = db.users.filter(u => u.role === 'teacher' && u.college_id === college.id).length;
-                const studentsCount = db.users.filter(u => u.role === 'student' && u.college_id === college.id).length;
+                const studentCount = db.users.filter(u => u.role === 'student' && u.college_id === college.id).length;
                 const coursesCount = db.courses.filter(c => c.college_id === college.id).length;
                 const adminUser = db.users.find(u => u.role === 'college' && u.college_id === college.id);
 
                 return {
                     ...college,
                     teachersCount,
-                    studentsCount,
+                    studentCount,
                     coursesCount,
                     adminName: adminUser?.name || 'Unknown',
                     aiUsage: Math.floor(Math.random() * 500000) + 10000
