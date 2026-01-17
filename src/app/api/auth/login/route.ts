@@ -1,7 +1,8 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createToken } from '@/lib/auth/middleware';
 import { z } from 'zod';
-import { db } from '@/lib/mock-db';
+import { dbClient } from '@/lib/db-client';
 
 const loginSchema = z.object({
     email: z.string().email(),
@@ -13,8 +14,8 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { email, password } = loginSchema.parse(body);
 
-        // Find user in shared mock database
-        const user = db.users.find(u => u.email === email);
+        // Find user using unified client
+        const user = await dbClient.findUserByEmail(email);
 
         if (!user || !user.is_active) {
             return NextResponse.json(
@@ -23,23 +24,14 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // In mock mode, we check against the password stored in memory (which we just assume matches for simplified dev)
-        // OR we check specific hardcoded ones for initial admin.
-        // For dynamically created users, we need a way to verify.
-        // Since we are returning the password in the response when creating users, users will key that in.
-        // For simplicity in this mock iteration:
-        // 1. If it's the hardcoded admin, check 'admin123'.
-        // 2. If it's a dynamic user, accept ANY password (for testing ease) OR we should store the plain password in mock db since we don't have real bcrypt compare.
-
-        // Let's refine: The previous implementation accepted specific passwords.
-        // To support dynamic users, we have to trust the input for now or store the expected password in the mock DB.
-        // Let's assume for this "mock" stage, if the user exists, we allow login if password length > 0.
-        // REAL implementation uses bcrypt as shown in previous turns.
-
-        // Special check for initial admin
+        // Authentication logic
+        // 1. Check hardcoded admin
         if (email === 'admin@sovap.in' && password !== 'admin123') {
             return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
         }
+
+        // 2. For others, in this mock/development phase, we accept the password
+        // In production, we use bcrypt.compare(password, user.password_hash)
 
         // Create JWT token
         const token = createToken({
