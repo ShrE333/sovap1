@@ -28,16 +28,14 @@ export async function POST(req: NextRequest) {
         // 3. Send text to LLM to generate modules
 
         // For this demo, we simulate a "Full Fledged Course" structure
+        // We remove 'id', 'level', and 'category' as they don't exist in the current SQL schema
         const course = await dbClient.createCourse({
-            id: courseId, // Using the custom ID
             title: title || 'New PDF Course',
             description: `Auto-generated course from uploaded document: ${file.name}`,
             teacher_id: user.id,
             college_id: user.collegeId,
             status: 'pending_approval',
             estimated_hours: 12,
-            level: 'Intermediate',
-            category: 'PDF Import',
             modules: [
                 { id: 'm1', title: 'Part 1: Foundational Concepts', order: 1 },
                 { id: 'm2', title: 'Part 2: Advanced Applications', order: 2 },
