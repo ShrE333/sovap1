@@ -1,11 +1,12 @@
 'use client';
 
+import React, { useState } from 'react';
 import { useLearningState } from '@/lib/contexts/LearningStateContext';
-import { useState } from 'react';
 import styles from './learn.module.css';
 import LabComponent from '@/components/adaptive/LabComponent';
 
-export default function LearnPage() {
+export default function LearnPage({ params }: { params: Promise<{ courseId: string }> }) {
+    const { courseId } = React.use(params);
     const { state, currentTopic, submitProgress, isLoading } = useLearningState();
     const [confidence, setConfidence] = useState(0.5);
     const [showQuiz, setShowQuiz] = useState(false);

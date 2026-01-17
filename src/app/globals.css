@@ -71,14 +71,29 @@ a {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes glow {
-  0% { box-shadow: 0 0 5px var(--accent-purple); }
-  50% { box-shadow: 0 0 20px var(--accent-purple); }
-  100% { box-shadow: 0 0 5px var(--accent-purple); }
+  0% {
+    box-shadow: 0 0 5px var(--accent-purple);
+  }
+
+  50% {
+    box-shadow: 0 0 20px var(--accent-purple);
+  }
+
+  100% {
+    box-shadow: 0 0 5px var(--accent-purple);
+  }
 }
 
 .animate-fade-in {
@@ -96,6 +111,7 @@ a {
 .gradient-text {
   background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple), var(--accent-pink));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   font-weight: 700;
 }
