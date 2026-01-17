@@ -4,9 +4,10 @@ import { db } from '@/lib/mock-db';
 
 export async function POST(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    props: { params: Promise<{ id: string }> }
 ) {
     try {
+        const params = await props.params;
         const user = await verifyAuth(req);
         if (!user || (user.role !== 'college' && user.role !== 'admin')) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
