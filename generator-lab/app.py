@@ -7,14 +7,20 @@ from typing import List, Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from groq import Groq
-from dotenv import load_dotenv
-import boto3 # For Cloudflare R2
+from qdrant_client import QdrantClient
+from qdrant_client.http import models
 
 load_dotenv()
 
 # Initialize Clients
 app = FastAPI(title="SOVAP Course Generator Lab")
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+# Vector DB Client
+qdrant_client = QdrantClient(
+    url=os.getenv("QDRANT_URL"), 
+    api_key=os.getenv("QDRANT_API_KEY")
+) if os.getenv("QDRANT_URL") else None
 
 # R2 Client Configuration (Boto3 is S3 compatible, used for R2)
 def get_r2_client():
@@ -100,7 +106,7 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
             r2.put_object(
                 Bucket=os.getenv("R2_BUCKET_NAME"),
                 Key=f"courses/{course_id}/master.json",
-                Body=json.dumps(course_data),
+                Body=json.dumps(full_course),
                 ContentType='application/json'
             )
             print(f"[+] Successfully stored to R2: courses/{course_id}/master.json")
@@ -108,8 +114,12 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
             # Fallback for local dev/missing keys: save to local file
             os.makedirs(f"storage/{course_id}", exist_ok=True)
             with open(f"storage/{course_id}/master.json", "w") as f:
-                json.dump(course_data, f)
+                json.dump(full_course, f)
             print(f"[!] R2 not configured. Saved locally to storage/{course_id}/master.json")
+
+        # --- PHASE 4: VECTOR CHUNKING ---
+        print(f"[*] Phase 4: Chunking and Vectorizing Concept Units...")
+        await vectorize_course(course_id, full_course)
 
     except Exception as e:
         print(f"[EX] Pipeline failed for {course_id}: {str(e)}")
@@ -140,6 +150,55 @@ class CourseQA:
         
         report_data = json.loads(chat_completion.choices[0].message.content)
         return QAStatus(**report_data)
+
+async def vectorize_course(course_id: str, course_data: dict):
+    """
+    Implements Phase 4: Chunk by Concept Unit.
+    Vectorizes theory into Qdrant using semantic markers.
+    """
+    if not qdrant_client:
+        print("[!] Qdrant not configured. Skipping vectorization.")
+        return
+
+    from sentence_transformers import SentenceTransformer
+    model = SentenceTransformer('all-MiniLM-L6-v2') # Standard efficient embedder
+
+    points = []
+    for module in course_data.get("modules", []):
+        module_title = module.get("title", "Unknown Module")
+        theory = module.get("theory", "")
+        
+        # Split theory into paragraphs/concepts (Simplified concept unit logic)
+        chunks = [c.strip() for c in theory.split("\n\n") if len(c.strip()) > 50]
+        
+        for idx, chunk in enumerate(chunks):
+            embedding = model.encode(chunk).tolist()
+            point_id = str(uuid.uuid4())
+            
+            points.append(models.PointStruct(
+                id=point_id,
+                vector=embedding,
+                payload={
+                    "course_id": course_id,
+                    "module": module_title,
+                    "content": chunk,
+                    "type": "theory",
+                    "metadata": {
+                        "chunk_index": idx,
+                        "difficulty": "basic" # Default
+                    }
+                }
+            ))
+
+    # Batch upsert to Qdrant
+    if points:
+        qdrant_client.upsert(
+            collection_name="sovap_concepts",
+            points=points
+        )
+    
+    print(f"[+] Phase 4: Vectorized {len(points)} concept units for {course_id}")
+
 
 @app.get("/status/{course_id}")
 async def get_status(course_id: str):

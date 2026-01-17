@@ -6,3 +6,5 @@ pydantic
 boto3
 pypdf
 pydantic-settings
+qdrant-client
+sentence-transformers
