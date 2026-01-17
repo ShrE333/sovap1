@@ -30,6 +30,25 @@ export const dbClient = {
         return data;
     },
 
+    async getUsers(filters: { role?: string, college_id?: string | null } = {}) {
+        if (USE_MOCK) {
+            let users = [...db.users];
+            if (filters.role) users = users.filter(u => u.role === filters.role);
+            if (filters.college_id !== undefined) users = users.filter(u => u.college_id === filters.college_id);
+            return users;
+        }
+        if (!supabaseAdmin) return [];
+        let query = supabaseAdmin.from('users').select('*');
+        if (filters.role) query = query.eq('role', filters.role);
+        if (filters.college_id !== undefined) {
+            if (filters.college_id === null) query = query.is('college_id', null);
+            else query = query.eq('college_id', filters.college_id);
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        return data;
+    },
+
     // === COLLEGES ===
     async getColleges() {
         if (USE_MOCK) {
@@ -84,5 +103,100 @@ export const dbClient = {
         if (uError) throw uError;
 
         return { college, admin };
+    },
+
+    // === COURSES ===
+    async getCourses(filters: { status?: string, teacher_id?: string, college_id?: string } = {}) {
+        if (USE_MOCK) {
+            let courses = [...db.courses];
+            if (filters.status) courses = courses.filter(c => c.status === filters.status);
+            if (filters.teacher_id) courses = courses.filter(c => c.teacher_id === filters.teacher_id);
+            if (filters.college_id) courses = courses.filter(c => c.college_id === filters.college_id);
+
+            return courses.map(c => {
+                const teacher = db.users.find(u => u.id === c.teacher_id);
+                return {
+                    ...c,
+                    teacherName: teacher?.name || 'Unknown'
+                };
+            });
+        }
+        if (!supabaseAdmin) return [];
+        let query = supabaseAdmin.from('courses').select('*, users!teacher_id(name)');
+        if (filters.status) query = query.eq('status', filters.status);
+        if (filters.teacher_id) query = query.eq('teacher_id', filters.teacher_id);
+        if (filters.college_id) query = query.eq('college_id', filters.college_id);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data;
+    },
+
+    async createCourse(courseData: any) {
+        if (USE_MOCK) {
+            const course = {
+                id: `course-${Date.now()}`,
+                ...courseData,
+                status: 'pending_approval',
+                created_at: new Date().toISOString()
+            };
+            db.courses.push(course);
+            saveDb();
+            return course;
+        }
+        if (!supabaseAdmin) throw new Error('Supabase not configured');
+        const { data, error } = await supabaseAdmin.from('courses').insert(courseData).select().single();
+        if (error) throw error;
+        return data;
+    },
+
+    async updateCourse(id: string, updateData: any) {
+        if (USE_MOCK) {
+            const index = db.courses.findIndex(c => c.id === id);
+            if (index === -1) throw new Error('Course not found');
+            db.courses[index] = { ...db.courses[index], ...updateData };
+            saveDb();
+            return db.courses[index];
+        }
+        if (!supabaseAdmin) throw new Error('Supabase not configured');
+        const { data, error } = await supabaseAdmin.from('courses').update(updateData).eq('id', id).select().single();
+        if (error) throw error;
+        return data;
+    },
+
+    // === ENROLLMENTS ===
+    async getEnrollments(filters: { user_id?: string, course_id?: string } = {}) {
+        if (USE_MOCK) {
+            let enrollments = [...db.enrollments];
+            if (filters.user_id) enrollments = enrollments.filter(e => e.user_id === filters.user_id);
+            if (filters.course_id) enrollments = enrollments.filter(e => e.course_id === filters.course_id);
+            return enrollments;
+        }
+        if (!supabaseAdmin) return [];
+        let query = supabaseAdmin.from('enrollments').select('*');
+        if (filters.user_id) query = query.eq('user_id', filters.user_id);
+        if (filters.course_id) query = query.eq('course_id', filters.course_id);
+        const { data, error } = await query;
+        if (error) throw error;
+        return data;
+    },
+
+    async createEnrollment(enrollData: any) {
+        if (USE_MOCK) {
+            const enrollment = {
+                id: `enroll-${Date.now()}`,
+                ...enrollData,
+                progress: 0,
+                status: 'active',
+                created_at: new Date().toISOString()
+            };
+            db.enrollments.push(enrollment);
+            saveDb();
+            return enrollment;
+        }
+        if (!supabaseAdmin) throw new Error('Supabase not configured');
+        const { data, error } = await supabaseAdmin.from('enrollments').insert(enrollData).select().single();
+        if (error) throw error;
+        return data;
     }
 };

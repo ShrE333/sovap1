@@ -1,7 +1,8 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth/middleware';
 import { z } from 'zod';
-import { db } from '@/lib/mock-db';
+import { dbClient } from '@/lib/db-client';
 
 const createTeacherSchema = z.object({
     name: z.string().min(2),
@@ -33,7 +34,8 @@ export async function POST(req: NextRequest) {
         }
 
         // Check if email exists
-        if (db.users.find(u => u.email === data.email)) {
+        const existingUser = await dbClient.findUserByEmail(data.email);
+        if (existingUser) {
             return NextResponse.json(
                 { error: 'Email already exists' },
                 { status: 400 }
@@ -41,17 +43,13 @@ export async function POST(req: NextRequest) {
         }
 
         // Create teacher
-        const teacher = {
-            id: `teacher-${Date.now()}`,
+        const teacher = await dbClient.createUser({
             email: data.email,
-            password_hash: 'mock_hash', // In real app, hash data.password
+            password_hash: data.password, // Mock
             name: data.name,
-            role: 'teacher' as const,
+            role: 'teacher',
             college_id: collegeId,
-            is_active: true,
-        };
-
-        db.users.push(teacher);
+        });
 
         return NextResponse.json({
             teacher: {
@@ -88,28 +86,27 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Filter teachers
-        let teachers = db.users.filter(u => u.role === 'teacher');
-
-        // Filter by college for college admins
+        const filters: any = { role: 'teacher' };
         if (user.role === 'college') {
-            teachers = teachers.filter(t => t.college_id === user.collegeId);
+            filters.college_id = user.collegeId;
         } else if (user.role !== 'admin') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // Get course counts
-        const teachersWithCounts = teachers.map(teacher => {
-            const courseCount = db.courses.filter(c => c.teacher_id === teacher.id).length;
+        const teachers = await dbClient.getUsers(filters);
+
+        // Enhance with counts (In a real app, this would be a more efficient query)
+        const teachersWithCounts = await Promise.all(teachers.map(async (teacher: any) => {
+            const teacherCourses = await dbClient.getCourses({ teacher_id: teacher.id });
             return {
                 id: teacher.id,
                 name: teacher.name,
                 email: teacher.email,
-                courseCount,
-                created_at: new Date().toISOString(), // Mock timestamp if missing
+                courseCount: teacherCourses.length,
+                created_at: teacher.created_at || new Date().toISOString(),
                 last_login: null
             };
-        });
+        }));
 
         return NextResponse.json({ teachers: teachersWithCounts });
     } catch (error) {

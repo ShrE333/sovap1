@@ -1,12 +1,12 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth/middleware';
-import { db } from '@/lib/mock-db';
+import { dbClient } from '@/lib/db-client';
 
 export async function POST(req: NextRequest) {
     try {
         const user = await verifyAuth(req);
         if (!user || user.role !== 'student') {
-            // Only students can enroll (or maybe admins for them? stick to students for now)
             return NextResponse.json({ error: 'Only students can enroll' }, { status: 403 });
         }
 
@@ -17,28 +17,24 @@ export async function POST(req: NextRequest) {
         }
 
         // Check if course exists and is published
-        const course = db.courses.find(c => c.id === courseId);
-        if (!course || course.status !== 'published') {
+        const courses = await dbClient.getCourses({ status: 'published' });
+        const course = courses.find((c: any) => c.id === courseId);
+
+        if (!course) {
             return NextResponse.json({ error: 'Course not found or not available' }, { status: 404 });
         }
 
         // Check if already enrolled
-        const existing = db.enrollments.find(e => e.user_id === user.id && e.course_id === courseId);
-        if (existing) {
-            return NextResponse.json({ message: 'Already enrolled', enrollment: existing });
+        const enrollments = await dbClient.getEnrollments({ user_id: user.id, course_id: courseId });
+        if (enrollments.length > 0) {
+            return NextResponse.json({ message: 'Already enrolled', enrollment: enrollments[0] });
         }
 
         // Create enrollment
-        const enrollment = {
-            id: `enroll-${Date.now()}`,
+        const enrollment = await dbClient.createEnrollment({
             user_id: user.id,
-            course_id: courseId,
-            progress: 0,
-            status: 'active' as const,
-            created_at: new Date().toISOString()
-        };
-
-        db.enrollments.push(enrollment);
+            course_id: courseId
+        });
 
         return NextResponse.json({ enrollment });
 
