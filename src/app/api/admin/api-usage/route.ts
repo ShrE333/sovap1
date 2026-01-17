@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/client';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { verifyAuth } from '@/lib/auth/middleware';
 
 // Rate limiting store (in production, use Redis)
@@ -19,6 +19,13 @@ export async function GET(req: NextRequest) {
         const userId = searchParams.get('userId');
         const startDate = searchParams.get('startDate');
         const endDate = searchParams.get('endDate');
+
+        if (!supabaseAdmin) {
+            return NextResponse.json({
+                apiUsage: [],
+                stats: { totalRequests: 0, avgResponseTime: 0, errorRate: 0, topEndpoints: {} }
+            });
+        }
 
         let query = supabaseAdmin
             .from('api_usage')
@@ -93,6 +100,8 @@ export async function logApiUsage(
     statusCode: number,
     responseTime: number
 ) {
+    if (!supabaseAdmin) return;
+
     try {
         await supabaseAdmin.from('api_usage').insert({
             user_id: userId,

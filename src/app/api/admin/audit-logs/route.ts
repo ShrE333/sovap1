@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/client';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { verifyAuth } from '@/lib/auth/middleware';
 
 export async function GET(req: NextRequest) {
@@ -13,6 +13,10 @@ export async function GET(req: NextRequest) {
         const userId = searchParams.get('userId');
         const action = searchParams.get('action');
         const limit = parseInt(searchParams.get('limit') || '100');
+
+        if (!supabaseAdmin) {
+            return NextResponse.json({ logs: [] });
+        }
 
         let query = supabaseAdmin
             .from('audit_logs')
