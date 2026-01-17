@@ -17,9 +17,18 @@ export async function POST(req: NextRequest) {
         // Find user using unified client
         const user = await dbClient.findUserByEmail(email);
 
-        if (!user || !user.is_active) {
+        if (!user) {
+            // Check if it's a configuration issue vs missing user
+            const isMock = process.env.USE_MOCK_DATA !== 'false';
             return NextResponse.json(
-                { error: 'Invalid credentials' },
+                { error: 'Invalid credentials', debug: isMock ? 'Mock Mode' : 'Supabase Active' },
+                { status: 401 }
+            );
+        }
+
+        if (!user.is_active) {
+            return NextResponse.json(
+                { error: 'Account is inactive' },
                 { status: 401 }
             );
         }
