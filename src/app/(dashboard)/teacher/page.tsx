@@ -33,6 +33,8 @@ export default function TeacherPage() {
     const [courses, setCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateCourse, setShowCreateCourse] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
     // Form
     const [newCourse, setNewCourse] = useState({
@@ -40,6 +42,49 @@ export default function TeacherPage() {
         description: '',
         estimatedHours: 10
     });
+
+    const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.type !== 'application/pdf') {
+            alert('Please upload a valid PDF file.');
+            return;
+        }
+
+        setIsUploading(true);
+        setUploadSuccess(null);
+
+        try {
+            // In a real implementation we would use FormData
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('title', file.name.replace('.pdf', ''));
+
+            const response = await apiCall('/api/courses/generate-from-pdf', {
+                method: 'POST',
+                headers: {
+                    // Do not set Content-Type, fetch will set it with boundary
+                },
+                body: formData,
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setUploadSuccess(data.courseId);
+                alert(`Success! Generated Course ID: ${data.courseId}`);
+                loadDashboard();
+            } else {
+                const data = await response.json();
+                alert(`Upload failed: ${data.error || 'Server error'}`);
+            }
+        } catch (error) {
+            console.error('PDF upload error:', error);
+            alert('An unexpected error occurred during upload.');
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     useEffect(() => {
         loadDashboard();
@@ -98,8 +143,19 @@ export default function TeacherPage() {
                     <p>{user?.name} | Faculty</p>
                 </div>
                 <div className={styles.actions}>
-                    <button className="btn-secondary">Export Data</button>
-                    <button className="btn-primary" onClick={() => setShowCreateCourse(true)}>+ Create Course</button>
+                    <button className="btn-secondary" onClick={() => setShowCreateCourse(true)} title="Manual creation is currently locked">
+                        🔒 Manual Create
+                    </button>
+                    <label className="btn-primary" style={{ cursor: isUploading ? 'not-allowed' : 'pointer', opacity: isUploading ? 0.7 : 1 }}>
+                        {isUploading ? '⚙️ Processing PDF...' : '📘 Upload PDF Course'}
+                        <input
+                            type="file"
+                            accept=".pdf"
+                            onChange={handlePdfUpload}
+                            disabled={isUploading}
+                            style={{ display: 'none' }}
+                        />
+                    </label>
                 </div>
             </header>
 
@@ -125,19 +181,24 @@ export default function TeacherPage() {
                     <h3>Your Courses</h3>
                 </div>
                 {courses.length === 0 ? (
-                    <div className="glass-card text-center p-4">You haven't created any courses yet.</div>
+                    <div className="glass-card text-center p-4">You haven't created any courses yet. Try uploading a syllabus PDF!</div>
                 ) : (
                     courses.map(course => (
                         <div key={course.id} className="glass-card" style={{ marginBottom: '1rem' }}>
                             <div className={styles.courseRow}>
                                 <div className={styles.courseInfo}>
-                                    <strong>{course.title}</strong>
+                                    <div>
+                                        <code style={{ fontSize: '0.7rem', color: 'var(--accent)', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', marginRight: '8px' }}>
+                                            {course.id}
+                                        </code>
+                                        <strong>{course.title}</strong>
+                                    </div>
                                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{course.description}</div>
                                 </div>
                                 <div className={styles.courseStats}>
                                     <span>{course.studentCount} Students</span>
                                     <span className={course.status === 'published' ? styles.statusBadge : styles.pending}>
-                                        {course.status === 'published' ? 'Live' : 'Pending'}
+                                        {course.status === 'published' ? 'Live' : 'Pending Approval'}
                                     </span>
                                 </div>
                                 <div className={styles.courseActions}>

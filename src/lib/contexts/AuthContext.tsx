@@ -103,11 +103,15 @@ export async function apiCall(
 ): Promise<Response> {
     const token = localStorage.getItem('sovap_token');
 
-    const headers = {
-        'Content-Type': 'application/json',
+    const headers: Record<string, string> = {
         ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
+        ...((options.headers as Record<string, string>) || {}),
     };
+
+    // Only set Content-Type to JSON if it's not FormData and not already set
+    if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
+    }
 
     const response = await fetch(endpoint, {
         ...options,

@@ -1,0 +1,58 @@
+
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyAuth } from '@/lib/auth/middleware';
+import { dbClient } from '@/lib/db-client';
+
+export async function POST(req: NextRequest) {
+    try {
+        const user = await verifyAuth(req);
+        if (!user || user.role !== 'teacher') {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const formData = await req.formData();
+        const file = formData.get('file') as File;
+        const title = formData.get('title') as string;
+
+        if (!file) {
+            return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+        }
+
+        // Generate a unique Course ID
+        const randomString = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const courseId = `PDF-${randomString}`;
+
+        // In a real app, you would:
+        // 1. Move the file to storage (e.g. Supabase Storage)
+        // 2. Extract text using pdf-parse or OCR
+        // 3. Send text to LLM to generate modules
+
+        // For this demo, we simulate a "Full Fledged Course" structure
+        const course = await dbClient.createCourse({
+            id: courseId, // Using the custom ID
+            title: title || 'New PDF Course',
+            description: `Auto-generated course from uploaded document: ${file.name}`,
+            teacher_id: user.id,
+            college_id: user.collegeId,
+            status: 'pending_approval',
+            estimated_hours: 12,
+            level: 'Intermediate',
+            category: 'PDF Import',
+            modules: [
+                { id: 'm1', title: 'Part 1: Foundational Concepts', order: 1 },
+                { id: 'm2', title: 'Part 2: Advanced Applications', order: 2 },
+                { id: 'm3', title: 'Part 3: Practical Assessment', order: 3 }
+            ]
+        });
+
+        return NextResponse.json({
+            message: 'Course generated from PDF',
+            courseId: course.id,
+            course
+        });
+
+    } catch (error) {
+        console.error('PDF Course Generation Error:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}
