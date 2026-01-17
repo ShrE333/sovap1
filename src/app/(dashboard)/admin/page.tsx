@@ -15,9 +15,14 @@ export default function AdminPage() {
     const { user } = useAuth();
     const [colleges, setColleges] = useState<College[]>([]);
     const [loading, setLoading] = useState(true);
+    const [dbStatus, setDbStatus] = useState<any>(null);
 
     useEffect(() => {
         loadStats();
+        apiCall('/api/admin/db-status')
+            .then(res => res.json())
+            .then(data => setDbStatus(data))
+            .catch(err => console.error('DB Check failed:', err));
     }, []);
 
     const loadStats = async () => {
@@ -58,6 +63,38 @@ export default function AdminPage() {
                     <div className={styles.statValue}>{totalStudents.toLocaleString()}</div>
                 </div>
             </div>
+
+            <section className="glass-card" style={{ marginBottom: '2rem' }}>
+                <h3 style={{ marginBottom: '1rem' }}>🔌 System Integration Status</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                    <div className={styles.statItem}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'block' }}>Database Mode</span>
+                        <span style={{ color: dbStatus?.mode === 'Supabase' ? 'var(--success)' : 'var(--warning)', fontWeight: 'bold' }}>
+                            {dbStatus?.mode || 'Loading...'}
+                        </span>
+                    </div>
+                    <div className={styles.statItem}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'block' }}>Connection Status</span>
+                        <span style={{
+                            color: dbStatus?.connectionStatus === 'Connected' ? 'var(--success)' : 'var(--error)',
+                            fontWeight: 'bold'
+                        }}>
+                            {dbStatus?.connectionStatus || 'Checking...'}
+                        </span>
+                    </div>
+                    <div className={styles.statItem}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'block' }}>URL Endpoint</span>
+                        <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>
+                            {dbStatus?.url || '---'}
+                        </span>
+                    </div>
+                </div>
+                {dbStatus?.diagnostic && (
+                    <div style={{ marginTop: '1rem', padding: '0.8rem', background: 'rgba(255,0,0,0.1)', borderRadius: '4px', border: '1px solid rgba(255,0,0,0.2)' }}>
+                        <code style={{ fontSize: '0.75rem' }}>{JSON.stringify(dbStatus.diagnostic)}</code>
+                    </div>
+                )}
+            </section>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                 <Link href="/admin/colleges" className="glass-card hover-card" style={{ textDecoration: 'none', color: 'inherit' }}>

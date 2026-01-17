@@ -22,7 +22,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 
 # App Configuration
-USE_SUPABASE=true
+# Set this to false to stop using mock data and use the real Supabase database
+USE_MOCK_DATA=false
 ```
 
 ## 4. Deploy Updates (Done by AI)

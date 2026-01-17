@@ -129,7 +129,11 @@ export const dbClient = {
 
         const { data, error } = await query;
         if (error) throw error;
-        return data;
+
+        return (data || []).map((c: any) => ({
+            ...c,
+            teacherName: c.users?.name || 'Unknown'
+        }));
     },
 
     async createCourse(courseData: any) {
