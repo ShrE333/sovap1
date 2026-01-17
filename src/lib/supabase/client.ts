@@ -30,6 +30,8 @@ const mockClient = {
     }),
 };
 
-export const supabase = (supabaseUrl && supabaseKey)
-    ? createClient(supabaseUrl, supabaseKey)
+const isValidUrl = supabaseUrl?.startsWith('http');
+
+export const supabase = (isValidUrl && supabaseKey)
+    ? createClient(supabaseUrl!, supabaseKey)
     : (mockClient as any);
