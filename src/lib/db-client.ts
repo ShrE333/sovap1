@@ -105,6 +105,33 @@ export const dbClient = {
         return { college, admin };
     },
 
+    async updateCollege(id: string, updateData: any) {
+        if (USE_MOCK) {
+            const index = db.colleges.findIndex(c => c.id === id);
+            if (index === -1) throw new Error('College not found');
+            db.colleges[index] = { ...db.colleges[index], ...updateData };
+
+            // Sync admin user if email/name changes
+            if (updateData.adminEmail || updateData.adminName || updateData.adminPassword) {
+                const adminIndex = db.users.findIndex(u => u.role === 'college' && u.college_id === id);
+                if (adminIndex !== -1) {
+                    db.users[adminIndex] = {
+                        ...db.users[adminIndex],
+                        email: updateData.adminEmail || db.users[adminIndex].email,
+                        name: updateData.adminName || db.users[adminIndex].name,
+                        password_hash: updateData.adminPassword || db.users[adminIndex].password_hash
+                    };
+                }
+            }
+            saveDb();
+            return db.colleges[index];
+        }
+        if (!supabaseAdmin) throw new Error('Supabase not configured');
+        const { data, error } = await supabaseAdmin.from('colleges').update(updateData).eq('id', id).select().single();
+        if (error) throw error;
+        return data;
+    },
+
     // === COURSES ===
     async getCourses(filters: { status?: string, teacher_id?: string, college_id?: string } = {}) {
         if (USE_MOCK) {
