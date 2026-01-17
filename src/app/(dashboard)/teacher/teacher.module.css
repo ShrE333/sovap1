@@ -1,0 +1,174 @@
+.teacherContainer {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-bottom: 5rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 3rem;
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.statValue {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+    color: var(--text-primary);
+}
+
+.statTrend {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.studentList {
+    margin-bottom: 3rem;
+}
+
+.studentList h3 {
+    margin-bottom: 1.5rem;
+}
+
+.tableContainer {
+    overflow-x: auto;
+    border-radius: 12px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.table th,
+.table td {
+    padding: 1.2rem;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.table th {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.miniProgress {
+    width: 60px;
+    height: 4px;
+    background: var(--glass-bg);
+    border-radius: 2px;
+    margin-bottom: 0.3rem;
+    overflow: hidden;
+}
+
+.miniFill {
+    height: 100%;
+}
+
+.badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.mastering {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+.struggling {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error);
+}
+
+.ontrack {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-blue);
+}
+
+.readyforcert {
+    background: rgba(139, 92, 246, 0.1);
+    color: var(--accent-purple);
+}
+
+.btnLink {
+    background: none;
+    border: none;
+    color: var(--accent-purple);
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.courseList {
+    margin-top: 3rem;
+}
+
+.sectionHeader {
+    margin-bottom: 1.5rem;
+}
+
+.courseRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+.courseInfo {
+    flex: 1;
+}
+
+.courseStats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.statusBadge {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--success);
+    font-size: 0.7rem;
+}
+
+.pending {
+    background: rgba(251, 191, 36, 0.1);
+    color: var(--warning);
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--warning);
+    font-size: 0.7rem;
+}
+
+.courseActions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .courseRow {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

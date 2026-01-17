@@ -1,0 +1,88 @@
+.container {
+    max-width: 900px;
+}
+
+.header {
+    margin-bottom: 3rem;
+}
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.statValue {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--accent-blue);
+    margin: 0.5rem 0;
+}
+
+.statLine {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.progressBar {
+    height: 8px;
+    background: var(--glass-bg);
+    border-radius: 4px;
+}
+
+.progressFill {
+    height: 100%;
+    background: var(--accent-purple);
+    border-radius: 4px;
+}
+
+.subText {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.history {
+    padding: 2rem;
+}
+
+.history h3 {
+    margin-bottom: 1.5rem;
+}
+
+.tableView {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.rowHeader {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    padding: 1rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.itemRow {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    font-size: 0.95rem;
+}
+
+.status {
+    font-weight: 600;
+}
+
+.empty {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted);
+}

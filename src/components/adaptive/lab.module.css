@@ -1,0 +1,100 @@
+.labContainer {
+    padding: 2rem;
+    margin-top: 2rem;
+}
+
+.labHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.badge {
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    background: var(--accent-blue);
+    border-radius: 4px;
+}
+
+.idleView {
+    text-align: center;
+    padding: 3rem 0;
+}
+
+.idleView p {
+    margin-bottom: 2rem;
+    color: var(--text-secondary);
+}
+
+.loadingView {
+    text-align: center;
+    padding: 3rem 0;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--glass-border);
+    border-top: 4px solid var(--accent-purple);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1.5rem;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.runningView {
+    display: grid;
+    grid-template-columns: 1fr 250px;
+    gap: 2rem;
+}
+
+.terminal {
+    background: #000;
+    padding: 1.5rem;
+    border-radius: 8px;
+    font-family: 'Courier New', Courier, monospace;
+    height: 300px;
+    color: #0f0;
+    overflow-y: auto;
+}
+
+.terminal code {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.input {
+    color: #fff;
+}
+
+.instructions h4 {
+    margin-bottom: 1rem;
+}
+
+.instructions p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+.successView {
+    text-align: center;
+    padding: 3rem 0;
+}
+
+.successView .icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}

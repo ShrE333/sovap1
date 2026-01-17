@@ -1,0 +1,242 @@
+.adminContainer {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-bottom: 5rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3rem;
+}
+
+.overviewGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.statValue {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-top: 0.5rem;
+}
+
+.panel {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.panelHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.collegeCard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px;
+    border: 1px solid var(--glass-border);
+    gap: 1rem;
+}
+
+.collegeInfo {
+    flex: 1;
+}
+
+.subText {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+}
+
+.badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.active {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+}
+
+.expiringsoon {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+}
+
+.expired {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error);
+}
+
+.pending {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-blue);
+}
+
+.small {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+}
+
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.modal {
+    width: 500px;
+    padding: 3rem;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.form {
+    margin-top: 2rem;
+}
+
+.inputGroup {
+    margin-bottom: 1.5rem;
+}
+
+.inputGroup label {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+}
+
+.inputGroup input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: white;
+    outline: none;
+}
+
+.inputGroup input:focus {
+    border-color: var(--accent-purple);
+}
+
+.inputGroup small {
+    display: block;
+    margin-top: 0.3rem;
+    font-size: 0.75rem;
+}
+
+.modalActions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.modalActions button {
+    flex: 1;
+}
+
+.credentialsBox {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid var(--success);
+    padding: 2rem;
+    border-radius: 12px;
+    margin-top: 1.5rem;
+}
+
+.credentialsBox h3 {
+    color: var(--success);
+    margin-bottom: 1rem;
+}
+
+.credentialsBox p {
+    color: var(--warning);
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.credentialItem {
+    margin-bottom: 1rem;
+}
+
+.credentialItem label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.3rem;
+}
+
+.credentialItem code {
+    display: block;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.8rem;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.credentialsBox button {
+    width: 100%;
+    margin-top: 1.5rem;
+}
+
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.8rem;
+    margin-top: 0.8rem;
+    padding: 0.8rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    margin-right: 1rem;
+}
+
+.statItem {
+    display: flex;
+    flex-direction: column;
+}
+
+.label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+@media (max-width: 1024px) {
+    .overviewGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .statsGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

@@ -1,0 +1,74 @@
+.authContainer {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.authCard {
+    width: 100%;
+    max-width: 450px;
+    padding: 3rem;
+    text-align: center;
+}
+
+.authCard h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.authCard p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+.error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--error);
+    color: var(--error);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.form {
+    text-align: left;
+}
+
+.inputGroup {
+    margin-bottom: 1.5rem;
+}
+
+.inputGroup label {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+}
+
+.inputGroup input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: white;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.inputGroup input:focus {
+    border-color: var(--accent-purple);
+}
+
+.switch {
+    margin-top: 2rem;
+    font-size: 0.9rem;
+}
+
+.switch a {
+    color: var(--accent-purple);
+    font-weight: 600;
+}

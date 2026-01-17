@@ -1,0 +1,124 @@
+.dashboardLayout {
+    display: flex;
+    min-height: 100vh;
+    background: var(--bg-primary);
+}
+
+.sidebar {
+    width: 280px;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    border-radius: 0;
+    border-right: 1px solid var(--glass-border);
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebarHeader {
+    margin-bottom: 3rem;
+}
+
+.sidebarLogo {
+    font-size: 1.8rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1.5rem;
+}
+
+.userInfo {
+    padding: 1rem;
+    background: var(--glass-bg);
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+}
+
+.userName {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.userRole {
+    font-size: 0.75rem;
+    color: var(--accent-purple);
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-top: 0.2rem;
+}
+
+.sideNav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.navItem {
+    padding: 0.8rem 1rem;
+    border-radius: 10px;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+}
+
+.navItem:hover,
+.navItem.active {
+    background: var(--glass-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+}
+
+.navItem.active {
+    border-color: var(--accent-purple);
+    background: var(--glass-hover);
+}
+
+.sidebarFooter {
+    margin-top: auto;
+    padding-top: 2rem;
+    border-top: 1px solid var(--glass-border);
+}
+
+.logoutBtn {
+    width: 100%;
+    padding: 0.8rem;
+    background: transparent;
+    border: 1px solid var(--error);
+    color: var(--error);
+    border-radius: 8px;
+    transition: all 0.2s;
+    font-weight: 600;
+}
+
+.logoutBtn:hover {
+    background: var(--error);
+    color: white;
+}
+
+.content {
+    margin-left: 280px;
+    flex: 1;
+    padding: 3rem 0;
+}
+
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 80px;
+        padding: 2rem 0.5rem;
+    }
+
+    .userName,
+    .userRole,
+    .navItem span {
+        display: none;
+    }
+
+    .content {
+        margin-left: 80px;
+    }
+}
