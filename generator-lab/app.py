@@ -1,13 +1,32 @@
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
-from pydantic import BaseModel
-from typing import List, Optional
 import os
 import json
 import uuid
+import asyncio
+from typing import List, Optional
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from pydantic import BaseModel
+from groq import Groq
+from dotenv import load_dotenv
+import boto3 # For Cloudflare R2
 
-# Production-ready AI Course Generator
+load_dotenv()
+
+# Initialize Clients
 app = FastAPI(title="SOVAP Course Generator Lab")
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+# R2 Client Configuration (Boto3 is S3 compatible, used for R2)
+def get_r2_client():
+    if not os.getenv("R2_ACCESS_KEY_ID"):
+        return None
+    return boto3.client(
+        's3',
+        endpoint_url=f"https://{os.getenv('R2_ACCOUNT_ID')}.r2.cloudflarestorage.com",
+        aws_access_key_id=os.getenv("R2_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("R2_SECRET_ACCESS_KEY"),
+        region_name="auto"
+    )
 
 class QAStatus(BaseModel):
     status: str # PASS | FAIL
@@ -25,90 +44,106 @@ class CourseRequest(BaseModel):
 @app.post("/generate")
 async def start_generation(request: CourseRequest, background_tasks: BackgroundTasks):
     course_id = f"COURSE-{uuid.uuid4().hex[:6].upper()}"
-    
-    # Trigger Phase 1: Heavy LLM Generation
     background_tasks.add_task(generate_pipeline, course_id, request)
     
     return {
         "status": "QUEUED",
         "course_id": course_id,
-        "message": "Phase 1: Course Generation started via Groq LLaMA 3"
+        "message": f"Generation for '{request.title}' started via LLaMA 3 (Groq)."
     }
 
 async def generate_pipeline(course_id: str, request: CourseRequest):
-    """
-    IMPLEMENTS:
-    1. Groq Content Generation (Phase 1)
-    2. QA Agent Validation (Phase 2)
-    3. R2 Source PDF Upload
-    4. Master JSON Structuring (Phase 3)
-    """
     print(f"[*] Starting pipeline for {course_id}: {request.title}")
     
-    # --- PHASE 1: GENERATION ---
-    # Here we would call Groq to generate the A-Z PDF content
-    course_content = "Extensive course content generated via Groq..." 
-    
-    # --- PHASE 2: AI QA AGENT ---
-    print(f"[*] Phase 2: Running AI QA Agent for {course_id}...")
-    qa_agent = CourseQA(course_id)
-    report = await qa_agent.validate(course_content)
-    
-    if report.status == "FAIL":
-        print(f"[!] QA FAILED for {course_id}. Errors: {report.critical_errors}")
-        # In a real app, we would notify the admin or trigger a fix loop
-        return
+    try:
+        # --- PHASE 1.1: SYLLABUS GENERATION ---
+        print(f"[*] Phase 1.1: Generating high-level Syllabus...")
+        syllabus_prompt = f"Create a detailed syllabus for '{request.title}'. Return JSON with list of {request.modules_count} modules, each with 3 subtopics."
+        
+        syllabus_resp = client.chat.completions.create(
+            messages=[{"role": "user", "content": syllabus_prompt}],
+            model="llama3-70b-8192",
+            response_format={"type": "json_object"}
+        )
+        syllabus = json.loads(syllabus_resp.choices[0].message.content)
+        
+        # --- PHASE 1.2: DEPTH EXPANSION (Recursive) ---
+        full_course = {"course_id": course_id, "title": request.title, "modules": []}
+        
+        for i, module in enumerate(syllabus.get("modules", [])):
+            print(f"[*] Expanding Module {i+1}: {module['title']}...")
+            module_prompt = f"Write deep educational theory, a code lab, and {request.mcqs_per_module} MCQs for the module: {module['title']}. Topics: {module.get('subtopics', [])}"
+            
+            chunk_resp = client.chat.completions.create(
+                messages=[{"role": "user", "content": module_prompt}],
+                model="llama3-70b-8192",
+                response_format={"type": "json_object"}
+            )
+            module_expanded = json.loads(chunk_resp.choices[0].message.content)
+            full_course["modules"].append(module_expanded)
 
-    print(f"[+] QA PASSED for {course_id} with score {report.score}/100")
+        # --- PHASE 2: AI QA AGENT ---
+        print(f"[*] Phase 2: Running AI QA Agent...")
+        qa_agent = CourseQA(course_id)
+        report = await qa_agent.validate(full_course)
+        
+        if report.status == "FAIL":
+            print(f"[!] QA FAILED for {course_id}. Errors: {report.critical_errors}")
+            return
 
-    # --- PHASE 3+: STORAGE & CHUNKING ---
-    # Generate PDF from content
-    # Upload to R2: cloudflare-r2://courses/{course_id}/source.pdf
-    
-    print(f"[+] Pipeline complete for {course_id}")
+        print(f"[+] QA PASSED for {course_id} with score {report.score}/100")
+
+        # --- PHASE 3: STORAGE (Cloudflare R2) ---
+        print(f"[*] Phase 3: Storing course in Cloudflare R2...")
+        r2 = get_r2_client()
+        if r2:
+            r2.put_object(
+                Bucket=os.getenv("R2_BUCKET_NAME"),
+                Key=f"courses/{course_id}/master.json",
+                Body=json.dumps(course_data),
+                ContentType='application/json'
+            )
+            print(f"[+] Successfully stored to R2: courses/{course_id}/master.json")
+        else:
+            # Fallback for local dev/missing keys: save to local file
+            os.makedirs(f"storage/{course_id}", exist_ok=True)
+            with open(f"storage/{course_id}/master.json", "w") as f:
+                json.dump(course_data, f)
+            print(f"[!] R2 not configured. Saved locally to storage/{course_id}/master.json")
+
+    except Exception as e:
+        print(f"[EX] Pipeline failed for {course_id}: {str(e)}")
 
 class CourseQA:
     def __init__(self, course_id: str):
         self.course_id = course_id
 
-    async def validate(self, content: str) -> QAStatus:
+    async def validate(self, course_data: dict) -> QAStatus:
+        """AI Agent evaluates content via Groq."""
+        prompt = f"""
+        Review the following course data for quality, accuracy, and completeness.
+        Course Data: {json.dumps(course_data)[:2000]}... (truncated for prompt)
+        
+        Evaluate:
+        1. Does it cover the topic comprehensively?
+        2. Are MCQs clear and accurate?
+        3. Are labs safe and executable?
+        
+        Return a JSON report with: status (PASS/FAIL), score (0-100), critical_errors (list), and suggested_fixes (list).
         """
-        AI Agent evaluates:
-        - Topic coverage (A to Z)
-        - Prerequisite ordering
-        - MCQ correctness & ambiguity
-        - Lab safety & completeness
-        """
-        # REAL IMPLEMENTATION: Send prompt to Groq with 'content' and ask for JSON Report
-        # For now, we simulate the logic based on the Roadmap rules
         
-        # Mock logic based on content inspection
-        has_critical_error = False
-        errors = []
-        
-        if len(content) < 50: # Example check
-            has_critical_error = True
-            errors.append("Significant content gaps detected. Course length insufficient.")
-
-        if has_critical_error:
-            return QAStatus(
-                status="FAIL",
-                score=45,
-                critical_errors=errors,
-                suggested_fixes=["Regenerate Module 2 to 5 with deeper theory.", "Add 70 MCQs per module."]
-            )
-        
-        return QAStatus(
-            status="PASS",
-            score=92,
-            critical_errors=[],
-            suggested_fixes=["Add more diagrams to Module 1."]
+        chat_completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama3-70b-8192",
+            response_format={"type": "json_object"}
         )
+        
+        report_data = json.loads(chat_completion.choices[0].message.content)
+        return QAStatus(**report_data)
 
 @app.get("/status/{course_id}")
 async def get_status(course_id: str):
-    # Check R2 for existence of source.pdf and master.json
-    return {"course_id": course_id, "status": "COMPLETED", "url": f"https://r2.sovap.in/courses/{course_id}/source.pdf"}
+    return {"course_id": course_id, "mode": "R2_ACTIVE_STORAGE"}
 
 if __name__ == "__main__":
     import uvicorn

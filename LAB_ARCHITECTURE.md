@@ -50,9 +50,10 @@ The SOVAP platform is transitioning into an AI-native learning ecosystem compose
 4. **PDF Assembly**: Conversion of Markdown to formal PDF via Python libraries.
 
 ### Storage Strategy
-- **File**: `courses/{course_id}/source.pdf`
-- **Bucket**: Cloudflare R2.
-- **Master JSON**: Export of structure to `courses/{course_id}/master.json`.
+- **Relational Metadata (Supabase)**: Stores `course_id`, `title`, `teacher_id`, and `r2_key`.
+- **Actual Content (Cloudflare R2)**: Stores the massive `master.json` and `source.pdf`.
+- **Vector Chunks (Qdrant)**: Stores semantic embeddings for RAG.
+- **Bucket naming**: `cloudflare-r2://courses/{course_id}/master.json`
 
 ---
 

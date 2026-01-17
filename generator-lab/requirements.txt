@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+groq
+python-dotenv
+pydantic
+boto3
+pypdf
+pydantic-settings
