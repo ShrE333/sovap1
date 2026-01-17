@@ -75,8 +75,8 @@ export default function StudentCoursesPage() {
                             </div>
 
                             <div className={styles.cardActions}>
-                                <Link href={`/learn/${course.id}`} className="btn-secondary" style={{ width: '100%', textAlign: 'center' }}>
-                                    Start Course
+                                <Link href={`/student/courses/${course.id}/pre-test`} className="btn-primary" style={{ width: '100%', textAlign: 'center' }}>
+                                    Take Diagnostic Pre-Test
                                 </Link>
                             </div>
                         </div>
