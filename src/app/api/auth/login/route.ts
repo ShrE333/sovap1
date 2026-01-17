@@ -34,13 +34,18 @@ export async function POST(req: NextRequest) {
         }
 
         // Authentication logic
-        // 1. Check hardcoded admin
-        if (email === 'admin@sovap.in' && password !== 'admin123') {
-            return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+        // 1. Check hardcoded admin fallback
+        if (email === 'admin@sovap.in' && password === 'admin123') {
+            // Master admin always allowed with this combo
+        } else {
+            // For all other users, check password hash (in this demo, we store it plain in DB)
+            if (user.password_hash !== password) {
+                return NextResponse.json(
+                    { error: 'Invalid credentials', debug: 'Password Mismatch' },
+                    { status: 401 }
+                );
+            }
         }
-
-        // 2. For others, in this mock/development phase, we accept the password
-        // In production, we use bcrypt.compare(password, user.password_hash)
 
         // Create JWT token
         const token = createToken({

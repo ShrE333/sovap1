@@ -127,9 +127,42 @@ export const dbClient = {
             return db.colleges[index];
         }
         if (!supabaseAdmin) throw new Error('Supabase not configured');
-        const { data, error } = await supabaseAdmin.from('colleges').update(updateData).eq('id', id).select().single();
-        if (error) throw error;
-        return data;
+
+        // Extract and map college table fields
+        const collegeFields: any = {};
+        if (updateData.name) collegeFields.name = updateData.name;
+        if (updateData.admin_email) collegeFields.admin_email = updateData.admin_email;
+        if (updateData.license_count !== undefined) collegeFields.license_count = updateData.license_count;
+        if (updateData.courses_limit !== undefined) collegeFields.courses_limit = updateData.courses_limit;
+        if (updateData.license_expiry) collegeFields.license_expiry = updateData.license_expiry;
+        if (updateData.status) collegeFields.status = updateData.status;
+
+        const { data: college, error } = await supabaseAdmin.from('colleges').update(collegeFields).eq('id', id).select().single();
+        if (error) {
+            console.error('Supabase update error:', error);
+            throw error;
+        }
+
+        // Sync admin user if needed
+        const userFields: any = {};
+        if (updateData.adminName) userFields.name = updateData.adminName;
+        if (updateData.adminEmail) userFields.email = updateData.adminEmail;
+        if (updateData.adminPassword) userFields.password_hash = updateData.adminPassword;
+
+        if (Object.keys(userFields).length > 0) {
+            const { error: uError } = await supabaseAdmin
+                .from('users')
+                .update(userFields)
+                .eq('college_id', id)
+                .eq('role', 'college');
+
+            if (uError) {
+                console.error('Admin user sync error:', uError);
+                throw uError;
+            }
+        }
+
+        return college;
     },
 
     // === COURSES ===

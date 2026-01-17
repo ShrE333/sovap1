@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { dbClient } from '@/lib/db-client';
 
 const updateCollegeSchema = z.object({
+    name: z.string().min(2).optional(),
     licenseCount: z.number().min(1).optional(),
     coursesLimit: z.number().min(1).optional(),
     licenseExpiry: z.string().optional(),
@@ -28,13 +29,19 @@ export async function PATCH(
         const body = await req.json();
         const data = updateCollegeSchema.parse(body);
 
-        const updatedCollege = await dbClient.updateCollege(id, {
-            ...data,
+        const updatePayload = {
+            name: data.name,
+            adminName: data.adminName,
+            adminEmail: data.adminEmail,
+            adminPassword: data.adminPassword,
+            status: data.status,
+            admin_email: data.adminEmail,
             license_count: data.licenseCount,
             courses_limit: data.coursesLimit,
             license_expiry: data.licenseExpiry ? new Date(data.licenseExpiry).toISOString() : undefined,
-            admin_email: data.adminEmail,
-        });
+        };
+
+        const updatedCollege = await dbClient.updateCollege(id, updatePayload);
 
         return NextResponse.json({ college: updatedCollege });
     } catch (error) {
