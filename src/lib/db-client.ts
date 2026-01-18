@@ -5,6 +5,13 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 // Check if we should use Mock data (defaults to true if env is missing or explicitly set to true)
 const USE_MOCK = process.env.USE_MOCK_DATA !== 'false';
 
+// Utility to validate UUID format for Supabase
+const isUUID = (str: string | null | undefined): boolean => {
+    if (!str) return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+};
+
 export const dbClient = {
     // === USERS ===
     async findUserByEmail(email: string) {
@@ -25,8 +32,19 @@ export const dbClient = {
             return newUser;
         }
         if (!supabaseAdmin) throw new Error('Supabase not configured');
-        const { data, error } = await supabaseAdmin.from('users').insert(userData).select().single();
-        if (error) throw error;
+
+        // Sanitize IDs
+        const sanitizedData = { ...userData };
+        if (sanitizedData.college_id && !isUUID(sanitizedData.college_id)) {
+            console.warn(`[dbClient] Stripping invalid college_id UUID: ${sanitizedData.college_id}`);
+            delete sanitizedData.college_id;
+        }
+
+        const { data, error } = await supabaseAdmin.from('users').insert(sanitizedData).select().single();
+        if (error) {
+            console.error('Supabase createUser error:', error);
+            throw new Error(`User Creation Error: ${error.message}`);
+        }
         return data;
     },
 
@@ -41,8 +59,15 @@ export const dbClient = {
         let query = supabaseAdmin.from('users').select('*');
         if (filters.role) query = query.eq('role', filters.role);
         if (filters.college_id !== undefined) {
-            if (filters.college_id === null) query = query.is('college_id', null);
-            else query = query.eq('college_id', filters.college_id);
+            if (filters.college_id === null) {
+                query = query.is('college_id', null);
+            } else {
+                if (!isUUID(filters.college_id)) {
+                    console.warn(`[dbClient] getUsers filter college_id is not a UUID: ${filters.college_id}`);
+                    return []; // Return empty instead of crashing
+                }
+                query = query.eq('college_id', filters.college_id);
+            }
         }
         const { data, error } = await query;
         if (error) throw error;
@@ -219,8 +244,23 @@ export const dbClient = {
             return course;
         }
         if (!supabaseAdmin) throw new Error('Supabase not configured');
-        const { data, error } = await supabaseAdmin.from('courses').insert(courseData).select().single();
-        if (error) throw error;
+
+        // Sanitize IDs for Supabase (must be valid UUIDs)
+        const sanitizedData = { ...courseData };
+        if (sanitizedData.college_id && !isUUID(sanitizedData.college_id)) {
+            console.warn(`[dbClient] Stripping invalid college_id UUID: ${sanitizedData.college_id}`);
+            delete sanitizedData.college_id;
+        }
+        if (sanitizedData.teacher_id && !isUUID(sanitizedData.teacher_id)) {
+            console.warn(`[dbClient] Stripping invalid teacher_id UUID: ${sanitizedData.teacher_id}`);
+            delete sanitizedData.teacher_id;
+        }
+
+        const { data, error } = await supabaseAdmin.from('courses').insert(sanitizedData).select().single();
+        if (error) {
+            console.error('Supabase createCourse error details:', error);
+            throw new Error(`Database Error: ${error.message} (Code: ${error.code})`);
+        }
         return data;
     },
 
@@ -279,16 +319,23 @@ export const dbClient = {
         if (!supabaseAdmin) throw new Error('Supabase not configured');
 
         // Map user_id to student_id for Supabase
-        const supabaseData = {
-            student_id: enrollData.user_id,
+        const supabaseData: any = {
             course_id: enrollData.course_id,
             progress: enrollData.progress || 0
         };
 
+        // Ensure IDs are valid UUIDs
+        if (isUUID(enrollData.user_id)) {
+            supabaseData.student_id = enrollData.user_id;
+        }
+        if (!isUUID(enrollData.course_id)) {
+            throw new Error('Invalid Course ID format (UUID expected)');
+        }
+
         const { data, error } = await supabaseAdmin.from('enrollments').insert(supabaseData).select().single();
         if (error) {
             console.error('Supabase createEnrollment error:', error);
-            throw error;
+            throw new Error(`Enrollment Error: ${error.message}`);
         }
 
         return {

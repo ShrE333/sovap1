@@ -64,6 +64,8 @@ export async function POST(req: NextRequest) {
 
     } catch (error) {
         console.error('PDF Course Generation Error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json({
+            error: error instanceof Error ? error.message : 'Internal server error'
+        }, { status: 500 });
     }
 }
