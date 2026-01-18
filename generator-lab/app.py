@@ -13,7 +13,14 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from neo4j import GraphDatabase
 
-load_dotenv()
+# Load .env only if it exists (for local dev)
+if os.path.exists(".env"):
+    load_dotenv()
+else:
+    print("[!] No .env file found, using system environment variables.")
+
+print(f"[*] DEBUG: PORT from env is {os.getenv('PORT')}")
+print(f"[*] DEBUG: GROQ_API_KEY present? {bool(os.getenv('GROQ_API_KEY'))}")
 
 # Initialize Clients
 app = FastAPI(title="SOVAP Course Generator Lab")
