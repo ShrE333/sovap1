@@ -50,10 +50,19 @@ The SOVAP platform is transitioning into an AI-native learning ecosystem compose
 4. **PDF Assembly**: Conversion of Markdown to formal PDF via Python libraries.
 
 ### Storage Strategy
-- **Relational Metadata (Supabase)**: Stores `course_id`, `title`, `teacher_id`, and `r2_key`.
-- **Actual Content (Cloudflare R2)**: Stores the massive `master.json` and `source.pdf`.
+- **Relational Metadata (Supabase)**: Stores `course_id`, `title`, and `teacher_id`.
+- **Actual Content (GitHub)**: Stores the massive `master.json` and `source.pdf` in a dedicated repository.
 - **Vector Chunks (Qdrant)**: Stores semantic embeddings for RAG.
-- **Bucket naming**: `cloudflare-r2://courses/{course_id}/master.json`
+- **Pathing**: `github.com/{repo}/courses/{course_id}/master.json`
+
+---
+
+## Phase 9: DEPLOYMENT
+### Course Generator Lab
+- **Containerization**: Dockerized for consistent environment.
+- **Service**: Python FastAPI.
+- **Hosting**: Railway or any Docker-ready cloud.
+- **Interface**: Admin-only REST API for background course generation.
 
 ---
 
@@ -62,6 +71,7 @@ The SOVAP platform is transitioning into an AI-native learning ecosystem compose
 - **PyMuPDF**: Parsing.
 - **Qdrant**: Vector storage.
 - **Neo4j**: Knowledge Graph.
-- **Cloudflare R2**: Object storage.
+- **GitHub**: Object storage (JSON/PDF).
 - **Railway**: Service deployment.
 - **FastAPI**: Backend processor.
+- **Docker**: Containerization.

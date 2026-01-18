@@ -128,23 +128,50 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
 
         print(f"[+] QA PASSED for {course_id} with score {report.score}/100")
 
-        # --- PHASE 3: STORAGE (Cloudflare R2) ---
-        print(f"[*] Phase 3: Storing course in Cloudflare R2...")
-        r2 = get_r2_client()
-        if r2:
-            r2.put_object(
-                Bucket=os.getenv("R2_BUCKET_NAME"),
-                Key=f"courses/{course_id}/master.json",
-                Body=json.dumps(full_course),
-                ContentType='application/json'
+        # --- PHASE 3: STORAGE (GitHub) ---
+        print(f"[*] Phase 3: Committing course to GitHub...")
+        
+        # 1. Generate PDF
+        pdf_path = f"storage/{course_id}/course.pdf"
+        os.makedirs(f"storage/{course_id}", exist_ok=True)
+        from fpdf import FPDF
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", size=12)
+        pdf.cell(200, 10, txt=f"Course: {request.title}", ln=1, align='C')
+        pdf.output(pdf_path)
+
+        # 2. Upload to GitHub
+        from github import Github
+        gh_token = os.getenv("GITHUB_TOKEN")
+        if gh_token:
+            g = Github(gh_token)
+            repo = g.get_repo(os.getenv("GITHUB_REPO"))
+            
+            # Save JSON
+            repo.create_file(
+                path=f"courses/{course_id}/master.json",
+                message=f"Add master JSON for {course_id}",
+                content=json.dumps(full_course, indent=2),
+                branch=os.getenv("GITHUB_BRANCH", "main")
             )
-            print(f"[+] Successfully stored to R2: courses/{course_id}/master.json")
+            
+            # Save PDF (requires base64 for binary)
+            import base64
+            with open(pdf_path, "rb") as f:
+                content = f.read()
+            repo.create_file(
+                path=f"courses/{course_id}/source.pdf",
+                message=f"Add course PDF for {course_id}",
+                content=content,
+                branch=os.getenv("GITHUB_BRANCH", "main")
+            )
+            print(f"[+] Successfully pushed to GitHub: {os.getenv('GITHUB_REPO')}")
         else:
-            # Fallback for local dev/missing keys: save to local file
-            os.makedirs(f"storage/{course_id}", exist_ok=True)
+            # Local Save
             with open(f"storage/{course_id}/master.json", "w") as f:
-                json.dump(full_course, f)
-            print(f"[!] R2 not configured. Saved locally to storage/{course_id}/master.json")
+                json.dump(full_course, f, indent=2)
+            print(f"[!] GITHUB_TOKEN not set. Course saved locally in storage/{course_id}/")
 
         # --- PHASE 4: VECTOR CHUNKING ---
         print(f"[*] Phase 4: Chunking and Vectorizing Concept Units...")
