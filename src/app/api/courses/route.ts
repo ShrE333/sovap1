@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    course_id: course.id,
                     title: course.title,
                     description: course.description,
                     modules_count: 5,

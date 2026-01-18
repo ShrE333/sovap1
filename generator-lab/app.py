@@ -105,26 +105,49 @@ class CourseRequest(BaseModel):
     mcqs_per_module: int = 70
 
 @app.get("/health")
-async def health_check():
+async def health():
+    groq_available = client is not None
+    qdrant_available = qdrant_client is not None
+    neo4j_available = neo4j_handler.driver is not None
+
+    github_ok = False
+    try:
+        from github import Github
+        gh_token = os.getenv("GITHUB_TOKEN")
+        gh_repo = os.getenv("GITHUB_REPO")
+        if gh_token and gh_repo:
+            g = Github(gh_token)
+            r = g.get_repo(gh_repo)
+            github_ok = True
+    except Exception: # Catch any exception during GitHub access
+        github_ok = False
+
     return {
         "status": "UP",
-        "groq_configured": client is not None,
-        "qdrant_configured": qdrant_client is not None,
-        "neo4j_configured": neo4j_handler.driver is not None,
-        "github_configured": bool(os.getenv("GITHUB_TOKEN")),
+        "groq": groq_available,
+        "qdrant": qdrant_available,
+        "neo4j": neo4j_available,
+        "github": github_ok,
+        "github_repo": os.getenv("GITHUB_REPO", "NOT_SET"),
         "port": os.getenv("PORT", "8000")
     }
 
 @app.post("/generate")
-async def start_generation(request: CourseRequest, background_tasks: BackgroundTasks):
-    course_id = f"COURSE-{uuid.uuid4().hex[:6].upper()}"
-    background_tasks.add_task(generate_pipeline, course_id, request)
-    
-    return {
-        "status": "QUEUED",
-        "course_id": course_id,
-        "message": f"Generation for '{request.title}' started via LLaMA 3 (Groq)."
-    }
+async def generate_course(request: CourseRequest, background_tasks: BackgroundTasks):
+    # Ensure background task uses the provided ID
+    background_tasks.add_task(generate_pipeline, request.course_id, request)
+    return {"message": "Generation started", "course_id": request.course_id}
+
+@app.post("/generate-from-pdf")
+async def generate_from_pdf(
+    course_id: str = Form(...),
+    title: str = Form(...),
+    file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = BackgroundTasks()
+):
+    print(f"[*] PDF Received: {file.filename} for Course: {course_id}")
+    background_tasks.add_task(generate_pipeline, course_id, CourseRequest(course_id=course_id, title=title, description=f"PDF: {file.filename}"))
+    return {"message": "PDF Processing started", "course_id": course_id}
 
 async def generate_pipeline(course_id: str, request: CourseRequest):
     print(f"[*] Starting pipeline for {course_id}: {request.title}")
@@ -175,47 +198,84 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
         # --- PHASE 3: STORAGE (GitHub) ---
         print(f"[*] Phase 3: Committing course to GitHub...")
         
-        # 1. Generate PDF
-        pdf_path = f"storage/{course_id}/course.pdf"
-        os.makedirs(f"storage/{course_id}", exist_ok=True)
-        from fpdf import FPDF
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, txt=f"Course: {request.title}", ln=1, align='C')
-        pdf.output(pdf_path)
+        try:
+            # 1. Generate PDF
+            pdf_path = f"storage/{course_id}/course.pdf"
+            os.makedirs(f"storage/{course_id}", exist_ok=True)
+            from fpdf import FPDF
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("helvetica", size=12)
+            pdf.cell(200, 10, txt=f"Course: {request.title}", ln=1, align='C')
+            
+            # Simple PDF content
+            for module in full_course.get("modules", []):
+                pdf.ln(10)
+                pdf.set_font("helvetica", style="B", size=14)
+                pdf.cell(0, 10, txt=f"Module: {module.get('title', 'Untitled')}", ln=1)
+                pdf.set_font("helvetica", size=11)
+                pdf.multi_cell(0, 7, txt=str(module.get("content", "No content generated.")))
+                
+            pdf.output(pdf_path)
 
-        # 2. Upload to GitHub
-        from github import Github
-        gh_token = os.getenv("GITHUB_TOKEN")
-        if gh_token:
-            g = Github(gh_token)
-            repo = g.get_repo(os.getenv("GITHUB_REPO"))
+            # 2. Upload to GitHub
+            from github import Github, GithubException
+            gh_token = os.getenv("GITHUB_TOKEN")
+            gh_repo_name = os.getenv("GITHUB_REPO")
+            gh_branch = os.getenv("GITHUB_BRANCH", "main")
             
-            # Save JSON
-            repo.create_file(
-                path=f"courses/{course_id}/master.json",
-                message=f"Add master JSON for {course_id}",
-                content=json.dumps(full_course, indent=2),
-                branch=os.getenv("GITHUB_BRANCH", "main")
-            )
-            
-            # Save PDF (requires base64 for binary)
-            import base64
-            with open(pdf_path, "rb") as f:
-                content = f.read()
-            repo.create_file(
-                path=f"courses/{course_id}/source.pdf",
-                message=f"Add course PDF for {course_id}",
-                content=content,
-                branch=os.getenv("GITHUB_BRANCH", "main")
-            )
-            print(f"[+] Successfully pushed to GitHub: {os.getenv('GITHUB_REPO')}")
-        else:
-            # Local Save
-            with open(f"storage/{course_id}/master.json", "w") as f:
-                json.dump(full_course, f, indent=2)
-            print(f"[!] GITHUB_TOKEN not set. Course saved locally in storage/{course_id}/")
+            if gh_token and gh_repo_name:
+                g = Github(gh_token)
+                repo = g.get_repo(gh_repo_name)
+                
+                # Helper to update or create
+                def push_to_gh(path, message, content, is_binary=False):
+                    try:
+                        contents = repo.get_contents(path, ref=gh_branch)
+                        repo.update_file(
+                            path=path,
+                            message=f"Update {message}",
+                            content=content,
+                            sha=contents.sha,
+                            branch=gh_branch
+                        )
+                        print(f"[GH] Updated: {path}")
+                    except GithubException as e:
+                        if e.status == 404:
+                            repo.create_file(
+                                path=path,
+                                message=f"Create {message}",
+                                content=content,
+                                branch=gh_branch
+                            )
+                            print(f"[GH] Created: {path}")
+                        else:
+                            raise
+
+                # Save JSON
+                push_to_gh(
+                    f"courses/{course_id}/master.json",
+                    f"master JSON for {course_id}",
+                    json.dumps(full_course, indent=2)
+                )
+                
+                # Save PDF
+                with open(pdf_path, "rb") as f:
+                    content = f.read()
+                push_to_gh(
+                    f"courses/{course_id}/source.pdf",
+                    f"course PDF for {course_id}",
+                    content,
+                    is_binary=True
+                )
+                print(f"[+] Successfully pushed to GitHub: {gh_repo_name}")
+            else:
+                # Local Save
+                with open(f"storage/{course_id}/master.json", "w") as f:
+                    json.dump(full_course, f, indent=2)
+                print(f"[!] GITHUB_TOKEN or REPO not set. Course saved locally in storage/{course_id}/")
+        except Exception as e:
+            print(f"[GH-ERROR] Storage phase failed for {course_id}: {str(e)}")
 
         # --- PHASE 4: VECTOR CHUNKING ---
         print(f"[*] Phase 4: Chunking and Vectorizing Concept Units...")

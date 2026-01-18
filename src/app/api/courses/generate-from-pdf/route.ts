@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
             const forwardData = new FormData();
             forwardData.append('file', file);
             forwardData.append('title', course.title);
+            forwardData.append('course_id', course.id);
 
             // Forward to Python Lab
             fetch(`${generatorUrl}/generate-from-pdf`, {

@@ -11,27 +11,43 @@ import { owaspCourse } from '@/lib/data/owasp-course';
 
 export default function LearnPage({ params }: { params: Promise<{ courseId: string }> }) {
     const { courseId } = React.use(params);
-    const { state, currentTopic, submitProgress, isLoading } = useLearningState();
+    const { state, currentCourse, currentTopic, submitProgress, initializeCourse, isLoading } = useLearningState();
     const [confidence, setConfidence] = useState(0.5);
     const [showQuiz, setShowQuiz] = useState(false);
     const [selectedMCQs, setSelectedMCQs] = useState<any[]>([]);
 
     useEffect(() => {
-        if (showQuiz && currentTopic) {
+        if (courseId) {
+            initializeCourse(courseId);
+        }
+    }, [courseId]);
+
+    useEffect(() => {
+        if (showQuiz && currentTopic && currentCourse) {
             // Find current module
-            const module = owaspCourse.modules.find(m => m.topics.some(t => t.id === currentTopic.id));
+            const module = currentCourse.modules.find(m => m.topics.some(t => t.id === currentTopic.id));
             if (module && module.mcqs.length > 0) {
                 const stateForEngine = {
-                    masteryTags: {}, // Should pull from Baseline in real app
+                    masteryTags: {},
                     recentConfidence: []
                 };
-                const picked = selectDynamicMCQs(module.mcqs, stateForEngine, 1); // 1 for demo, 30 for prod
+                const picked = selectDynamicMCQs(module.mcqs, stateForEngine, 1);
                 setSelectedMCQs(picked);
+            } else if (module) {
+                // If no MCQs in this module, generate a dummy one or skip
+                setSelectedMCQs([{
+                    id: 'dummy',
+                    question: `Adaptive Check: Do you feel ready to advance in ${currentTopic.title}?`,
+                    options: ['Yes, absolutely', 'I need more practice'],
+                    correctIndex: 0,
+                    difficulty: 'basic',
+                    explanation: 'Self-assessment verified.'
+                }]);
             }
         }
-    }, [showQuiz, currentTopic]);
+    }, [showQuiz, currentTopic, currentCourse]);
 
-    if (isLoading) return <div className="loader">Initializing Engine...</div>;
+    if (isLoading || !state) return <div className="loader">Initializing Cognitive Engine for {courseId}...</div>;
     if (!currentTopic) return <div className="completed">Course Completed! 🎉</div>;
 
     const handleQuizComplete = (score: number, avgConfidence: number) => {
@@ -44,12 +60,14 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
     return (
         <div className={styles.learnContainer}>
             <header className={styles.learnHeader}>
-                <div className={styles.topicBadge}>Module: Introduction</div>
+                <div className={styles.topicBadge}>
+                    Module: {currentCourse?.modules.find(m => m.topics.some(t => t.id === currentTopic.id))?.title || 'Learning'}
+                </div>
                 <h1>{currentTopic.title}</h1>
                 <div className={styles.progressBar}>
                     <div
                         className={styles.progressFill}
-                        style={{ width: `${(Object.keys(state.topicMastery).length / 10) * 100}%` }}
+                        style={{ width: `${(Object.keys(state.topicMastery).length / (currentCourse?.modules.reduce((acc, m) => acc + m.topics.length, 0) || 10)) * 100}%` }}
                     />
                 </div>
             </header>
