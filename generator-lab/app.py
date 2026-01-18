@@ -27,13 +27,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# Defensive Client Initialization
+groq_api_key = os.getenv("GROQ_API_KEY")
+if not groq_api_key:
+    print("[!] WARNING: GROQ_API_KEY not found. Course generation will fail.")
+    client = None
+else:
+    client = Groq(api_key=groq_api_key)
 
 # Vector DB Client
-qdrant_client = QdrantClient(
-    url=os.getenv("QDRANT_URL"), 
-    api_key=os.getenv("QDRANT_API_KEY")
-) if os.getenv("QDRANT_URL") else None
+qdrant_url = os.getenv("QDRANT_URL")
+qdrant_key = os.getenv("QDRANT_API_KEY")
+if qdrant_url and qdrant_key:
+    qdrant_client = QdrantClient(url=qdrant_url, api_key=qdrant_key)
+else:
+    print("[!] WARNING: Qdrant configuration incomplete. Vectorizing will be skipped.")
+    qdrant_client = None
 
 # Knowledge Graph Client (Neo4j)
 class Neo4jHandler:
@@ -88,6 +97,17 @@ class CourseRequest(BaseModel):
     labs_per_module: int = 1
     mcqs_per_module: int = 70
 
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "UP",
+        "groq_configured": client is not None,
+        "qdrant_configured": qdrant_client is not None,
+        "neo4j_configured": neo4j_handler.driver is not None,
+        "github_configured": bool(os.getenv("GITHUB_TOKEN")),
+        "port": os.getenv("PORT", "8000")
+    }
+
 @app.post("/generate")
 async def start_generation(request: CourseRequest, background_tasks: BackgroundTasks):
     course_id = f"COURSE-{uuid.uuid4().hex[:6].upper()}"
@@ -102,6 +122,10 @@ async def start_generation(request: CourseRequest, background_tasks: BackgroundT
 async def generate_pipeline(course_id: str, request: CourseRequest):
     print(f"[*] Starting pipeline for {course_id}: {request.title}")
     
+    if not client:
+        print(f"[!] ERROR: Groq Client not initialized. Check GROQ_API_KEY environment variable.")
+        return
+
     try:
         # --- PHASE 1.1: SYLLABUS GENERATION ---
         print(f"[*] Phase 1.1: Generating high-level Syllabus...")
