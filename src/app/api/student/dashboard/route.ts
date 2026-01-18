@@ -9,6 +9,17 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // UUID check: If user.id is a mock ID, return empty data
+        if (user.id.startsWith('user-')) {
+            return NextResponse.json({
+                enrolledCourses: [],
+                stats: { totalCourses: 0, completedModules: 0, masteryLevel: 0, currentStreak: 0 },
+                recentActivity: [],
+                achievements: [],
+                message: 'Demo mode active. Please register a real account for live data.'
+            });
+        }
+
         // Fetch enrollments
         const enrollments = await dbClient.getEnrollments({ user_id: user.id });
 

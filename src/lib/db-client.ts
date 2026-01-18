@@ -182,7 +182,8 @@ export const dbClient = {
             });
         }
         if (!supabaseAdmin) return [];
-        let query = supabaseAdmin.from('courses').select('*, users!teacher_id(name)');
+
+        let query = supabaseAdmin.from('courses').select('*');
         if (filters.status) query = query.eq('status', filters.status);
         if (filters.teacher_id) query = query.eq('teacher_id', filters.teacher_id);
         if (filters.college_id) query = query.eq('college_id', filters.college_id);
@@ -190,9 +191,18 @@ export const dbClient = {
         const { data, error } = await query;
         if (error) throw error;
 
+        // Fetch teachers for these courses to avoid complex join errors
+        const teacherIds = Array.from(new Set((data || []).map((c: any) => c.teacher_id).filter(Boolean)));
+        let teachersMap: Record<string, string> = {};
+
+        if (teacherIds.length > 0) {
+            const { data: teachers } = await supabaseAdmin.from('users').select('id, name').in('id', teacherIds);
+            teachersMap = (teachers || []).reduce((acc: any, t: any) => ({ ...acc, [t.id]: t.name }), {});
+        }
+
         return (data || []).map((c: any) => ({
             ...c,
-            teacherName: c.users?.name || 'Unknown'
+            teacherName: teachersMap[c.teacher_id] || 'Unknown'
         }));
     },
 

@@ -88,6 +88,9 @@ export async function GET(req: NextRequest) {
 
         const filters: any = { role: 'teacher' };
         if (user.role === 'college') {
+            if (!user.collegeId || user.id.startsWith('user-')) {
+                return NextResponse.json({ teachers: [] });
+            }
             filters.college_id = user.collegeId;
         } else if (user.role !== 'admin') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
