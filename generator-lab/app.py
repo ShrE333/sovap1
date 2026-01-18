@@ -5,13 +5,13 @@ import uuid
 import asyncio
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from dotenv import load_dotenv
 from groq import Groq
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from neo4j import GraphDatabase
-
-from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
