@@ -10,12 +10,17 @@ export async function GET(req: NextRequest) {
         }
 
         // Fetch enrollments
-        const enrollments = await dbClient.getEnrollments({ student_id: user.id });
+        const enrollments = await dbClient.getEnrollments({ user_id: user.id });
 
-        // Fetch courses for enrolled courses
-        const enrolledCourses = await Promise.all(
-            enrollments.map(async (enrollment: any) => {
-                const course = await dbClient.getCourse(enrollment.course_id);
+        // Fetch all courses
+        const allCourses = await dbClient.getCourses();
+
+        // Match enrollments with courses
+        const enrolledCourses = enrollments
+            .map((enrollment: any) => {
+                const course = allCourses.find((c: any) => c.id === enrollment.course_id);
+                if (!course) return null;
+
                 return {
                     id: course.id,
                     title: course.title,
@@ -24,7 +29,7 @@ export async function GET(req: NextRequest) {
                     lastAccessed: enrollment.updated_at || new Date().toISOString()
                 };
             })
-        );
+            .filter(Boolean); // Remove null entries
 
         // Calculate stats
         const totalModules = enrolledCourses.reduce((sum, course: any) => {
