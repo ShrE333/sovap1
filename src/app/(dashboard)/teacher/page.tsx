@@ -275,7 +275,7 @@ export default function TeacherPage() {
                             <h2>✨ Magic AI Course Creation</h2>
                             <button className={styles.closeBtn} onClick={() => setShowCreateCourse(false)}>×</button>
                         </div>
-                        <p className={styles.modalSubtext}>Just provide a title and description. Our agents will generate the full cognitive syllabus, content, and assessments.</p>
+                        <p className={styles.modalSubtext}>Provide a title, and our agents will handle the rest. Description and hours are optional.</p>
 
                         <form onSubmit={handleCreateCourse} className={styles.modalForm}>
                             <div className={styles.inputGroup}>
@@ -289,20 +289,19 @@ export default function TeacherPage() {
                                 />
                             </div>
                             <div className={styles.inputGroup}>
-                                <label>Context & Scope</label>
+                                <label>Context & Scope (Optional)</label>
                                 <textarea
-                                    required
-                                    placeholder="Describe the target audience and key topics to cover..."
+                                    placeholder="Briefly describe the target audience or topics (optional)..."
                                     value={newCourse.description}
                                     onChange={e => setNewCourse({ ...newCourse, description: e.target.value })}
                                 />
                             </div>
                             <div className={styles.inputGroup}>
-                                <label>Complexity Level (Estimated Hours)</label>
+                                <label>Estimated Hours (Optional)</label>
                                 <input
                                     type="number"
-                                    required
                                     min={1}
+                                    placeholder="10"
                                     value={newCourse.estimatedHours}
                                     onChange={e => setNewCourse({ ...newCourse, estimatedHours: parseInt(e.target.value) || 0 })}
                                 />

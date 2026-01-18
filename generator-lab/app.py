@@ -136,7 +136,8 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
     try:
         # --- PHASE 1.1: SYLLABUS GENERATION ---
         print(f"[*] Phase 1.1: Generating high-level Syllabus...")
-        syllabus_prompt = f"Create a detailed syllabus for '{request.title}'. Return JSON with list of {request.modules_count} modules, each with 3 subtopics."
+        ctx = request.description if request.description and len(request.description) > 5 else f"A comprehensive course on {request.title}"
+        syllabus_prompt = f"Create a detailed syllabus for '{request.title}'. Context: {ctx}. Return JSON with list of {request.modules_count} modules, each with 3 subtopics."
         
         syllabus_resp = client.chat.completions.create(
             messages=[{"role": "user", "content": syllabus_prompt}],
@@ -150,7 +151,7 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
         
         for i, module in enumerate(syllabus.get("modules", [])):
             print(f"[*] Expanding Module {i+1}: {module['title']}...")
-            module_prompt = f"Write deep educational theory, a code lab, and {request.mcqs_per_module} MCQs for the module: {module['title']}. Topics: {module.get('subtopics', [])}"
+            module_prompt = f"Write deep educational theory, a code lab, and {request.mcqs_per_module} MCQs for the module: {module['title']}. Topics: {module.get('subtopics', [])}. Overall Context: {ctx}"
             
             chunk_resp = client.chat.completions.create(
                 messages=[{"role": "user", "content": module_prompt}],
