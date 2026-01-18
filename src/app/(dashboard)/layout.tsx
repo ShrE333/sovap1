@@ -11,6 +11,7 @@ function Sidebar() {
     const pathname = usePathname();
 
     const studentLinks = [
+        { name: 'Dashboard', href: '/student', icon: '🏠' },
         { name: 'My Courses', href: '/student/courses', icon: '📚' },
         { name: 'Skill Graph', href: '/student/skills', icon: '🕸️' },
         { name: 'Progress', href: '/student/progress', icon: '📊' },
@@ -18,20 +19,20 @@ function Sidebar() {
     ];
 
     const teacherLinks = [
-        { name: 'Workbench', href: '/teacher', icon: '🛠️' },
+        { name: 'Dashboard', href: '/teacher', icon: '🏠' },
         { name: 'Students', href: '/teacher/students', icon: '👥' },
         { name: 'AI Generator', href: '/teacher/ai', icon: '🤖' },
     ];
 
     const collegeLinks = [
-        { name: 'Dashboard', href: '/college', icon: '🏛️' },
+        { name: 'Dashboard', href: '/college', icon: '🏠' },
         { name: 'Teachers', href: '/college/teachers', icon: '👨‍🏫' },
         { name: 'Students', href: '/college/students', icon: '👨‍🎓' },
         { name: 'Approvals', href: '/college/approvals', icon: '✅' },
     ];
 
     const adminLinks = [
-        { name: 'Control Panel', href: '/admin', icon: '⚙️' },
+        { name: 'Dashboard', href: '/admin', icon: '🏠' },
         { name: 'Colleges', href: '/admin/colleges', icon: '🏛️' },
         { name: 'AI Models', href: '/admin/ai', icon: '🧠' },
     ];
@@ -41,10 +42,14 @@ function Sidebar() {
     if (user?.role === 'college') links = collegeLinks;
     if (user?.role === 'admin') links = adminLinks;
 
+    const dashboardHref = user?.role === 'admin' ? '/admin' :
+        user?.role === 'college' ? '/college' :
+            user?.role === 'teacher' ? '/teacher' : '/student';
+
     return (
         <aside className={`${styles.sidebar} glass`}>
             <div className={styles.sidebarHeader}>
-                <div className={styles.sidebarLogo}>SOVAP</div>
+                <Link href={dashboardHref} className={styles.sidebarLogo}>SOVAP</Link>
                 <div className={styles.userInfo}>
                     <div className={styles.userName}>{user?.name || 'Guest'}</div>
                     <div className={styles.userRole}>{user?.role || 'student'}</div>
@@ -52,7 +57,6 @@ function Sidebar() {
             </div>
 
             <nav className={styles.sideNav}>
-                <Link href="/" className={styles.navItem}>🏠 Home</Link>
                 {links.map(link => (
                     <Link
                         key={link.href}

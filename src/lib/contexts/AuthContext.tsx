@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     router.push('/teacher');
                     break;
                 default:
-                    router.push('/student/courses');
+                    router.push('/student');
             }
         } catch (error) {
             console.error('Login error:', error);

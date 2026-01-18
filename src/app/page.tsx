@@ -1,11 +1,32 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import styles from './page.module.css';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 export default function Home() {
   const { user, isLoading, logout } = useAuth();
+  const router = useRouter();
+
+  // Automatic redirect if already logged in
+  useEffect(() => {
+    if (!isLoading && user) {
+      const path = user.role === 'admin' ? '/admin' :
+        user.role === 'college' ? '/college' :
+          user.role === 'teacher' ? '/teacher' : '/student';
+      router.push(path);
+    }
+  }, [user, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <div className={styles.loading}>
+        <div className={styles.spinner}></div>
+      </div>
+    );
+  }
 
   return (
     <main className={styles.landing}>
@@ -15,7 +36,7 @@ export default function Home() {
           <nav className={styles.nav}>
             {user ? (
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <Link href={user.role === 'admin' ? '/admin' : user.role === 'college' ? '/college' : user.role === 'teacher' ? '/teacher' : '/student/courses'} className="btn-primary">
+                <Link href={user.role === 'admin' ? '/admin' : user.role === 'college' ? '/college' : user.role === 'teacher' ? '/teacher' : '/student'} className="btn-primary">
                   Dashboard
                 </Link>
                 <button onClick={logout} className="btn-secondary" style={{ cursor: 'pointer' }}>
