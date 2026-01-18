@@ -38,8 +38,29 @@ export async function POST(req: NextRequest) {
             modules: data.modules,
             estimated_hours: data.estimatedHours || 0,
             college_id: user.collegeId!,
-            teacher_id: user.id
+            teacher_id: user.id,
+            status: 'pending_approval'
         });
+
+        // Trigger AI Course Generation Lab (FastAPI)
+        // This is Phase 1-5 of the platform architecture
+        const generatorUrl = process.env.GENERATOR_LAB_URL || 'http://localhost:8000';
+
+        try {
+            // We fire and forget (don't await) to keep API responsive
+            fetch(`${generatorUrl}/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: course.title,
+                    description: course.description,
+                    modules_count: 5,
+                    mcqs_per_module: 10
+                })
+            }).catch(e => console.error("Generator Lab Trigger Failed:", e));
+        } catch (e) {
+            console.error("Generator Linkage Failed:", e);
+        }
 
         return NextResponse.json({ course });
     } catch (error) {

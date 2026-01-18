@@ -36,15 +36,28 @@ export async function POST(req: NextRequest) {
             college_id: user.collegeId,
             status: 'pending_approval',
             estimated_hours: 12,
-            modules: [
-                { id: 'm1', title: 'Part 1: Foundational Concepts', order: 1 },
-                { id: 'm2', title: 'Part 2: Advanced Applications', order: 2 },
-                { id: 'm3', title: 'Part 3: Practical Assessment', order: 3 }
-            ]
+            modules: []
         });
 
+        // Trigger AI Course Generation Lab with PDF
+        const generatorUrl = process.env.GENERATOR_LAB_URL || 'http://localhost:8000';
+
+        try {
+            const forwardData = new FormData();
+            forwardData.append('file', file);
+            forwardData.append('title', course.title);
+
+            // Forward to Python Lab
+            fetch(`${generatorUrl}/generate-from-pdf`, {
+                method: 'POST',
+                body: forwardData,
+            }).catch(e => console.error("Generator Lab PDF Trigger Failed:", e));
+        } catch (e) {
+            console.error("Generator PDF Linkage Failed:", e);
+        }
+
         return NextResponse.json({
-            message: 'Course generated from PDF',
+            message: 'Course generation started from PDF',
             courseId: course.id,
             course
         });
