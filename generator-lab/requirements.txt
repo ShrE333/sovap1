@@ -8,3 +8,4 @@ pypdf
 pydantic-settings
 qdrant-client
 sentence-transformers
+neo4j

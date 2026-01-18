@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from groq import Groq
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
+from neo4j import GraphDatabase
 
 load_dotenv()
 
@@ -21,6 +22,34 @@ qdrant_client = QdrantClient(
     url=os.getenv("QDRANT_URL"), 
     api_key=os.getenv("QDRANT_API_KEY")
 ) if os.getenv("QDRANT_URL") else None
+
+# Knowledge Graph Client (Neo4j)
+class Neo4jHandler:
+    def __init__(self):
+        uri = os.getenv("NEO4J_URI")
+        user = os.getenv("NEO4J_USER")
+        password = os.getenv("NEO4J_PASSWORD")
+        self.driver = GraphDatabase.driver(uri, auth=(user, password)) if uri else None
+
+    def close(self):
+        if self.driver:
+            self.driver.close()
+
+    def add_dependency(self, course_id, concept, prerequisite):
+        if not self.driver: return
+        with self.driver.session() as session:
+            session.execute_write(self._create_relationship, course_id, concept, prerequisite)
+
+    @staticmethod
+    def _create_relationship(tx, course_id, concept, prerequisite):
+        query = (
+            "MERGE (c:Concept {name: $concept, course_id: $course_id}) "
+            "MERGE (p:Concept {name: $prerequisite, course_id: $course_id}) "
+            "MERGE (p)-[:PREREQUISITE_OF]->(c)"
+        )
+        tx.run(query, concept=concept, prerequisite=prerequisite, course_id=course_id)
+
+neo4j_handler = Neo4jHandler()
 
 # R2 Client Configuration (Boto3 is S3 compatible, used for R2)
 def get_r2_client():
@@ -121,6 +150,10 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
         print(f"[*] Phase 4: Chunking and Vectorizing Concept Units...")
         await vectorize_course(course_id, full_course)
 
+        # --- PHASE 5: KNOWLEDGE GRAPH ---
+        print(f"[*] Phase 5: Building Knowledge Graph in Neo4j...")
+        await build_knowledge_graph(course_id, full_course)
+
     except Exception as e:
         print(f"[EX] Pipeline failed for {course_id}: {str(e)}")
 
@@ -198,6 +231,27 @@ async def vectorize_course(course_id: str, course_data: dict):
         )
     
     print(f"[+] Phase 4: Vectorized {len(points)} concept units for {course_id}")
+
+
+async def build_knowledge_graph(course_id: str, course_data: dict):
+    """
+    Implements Phase 5: Build a concept dependency graph.
+    Extracts prerequisites from course structure and maps them in Neo4j.
+    """
+    if not neo4j_handler.driver:
+        print("[!] Neo4j not configured. Skipping Knowledge Graph build.")
+        return
+
+    for module in course_data.get("modules", []):
+        module_name = module.get("title")
+        # LLM-generated modules should include a 'prerequisites' list
+        prereqs = module.get("prerequisites", [])
+        
+        for prereq in prereqs:
+            neo4j_handler.add_dependency(course_id, module_name, prereq)
+            print(f"[*] Graph Edge: {prereq} -> PREREQUISITE_OF -> {module_name}")
+
+    print(f"[+] Phase 5: Knowledge Graph constructed for {course_id}")
 
 
 @app.get("/status/{course_id}")
