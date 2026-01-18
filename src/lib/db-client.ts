@@ -248,11 +248,19 @@ export const dbClient = {
         }
         if (!supabaseAdmin) return [];
         let query = supabaseAdmin.from('enrollments').select('*');
-        if (filters.user_id) query = query.eq('user_id', filters.user_id);
+        if (filters.user_id) query = query.eq('student_id', filters.user_id);
         if (filters.course_id) query = query.eq('course_id', filters.course_id);
         const { data, error } = await query;
-        if (error) throw error;
-        return data;
+        if (error) {
+            console.error('Supabase getEnrollments error:', error);
+            throw error;
+        }
+
+        // Map student_id back to user_id for frontend consistency
+        return (data || []).map((e: any) => ({
+            ...e,
+            user_id: e.student_id
+        }));
     },
 
     async createEnrollment(enrollData: any) {
@@ -269,8 +277,23 @@ export const dbClient = {
             return enrollment;
         }
         if (!supabaseAdmin) throw new Error('Supabase not configured');
-        const { data, error } = await supabaseAdmin.from('enrollments').insert(enrollData).select().single();
-        if (error) throw error;
-        return data;
+
+        // Map user_id to student_id for Supabase
+        const supabaseData = {
+            student_id: enrollData.user_id,
+            course_id: enrollData.course_id,
+            progress: enrollData.progress || 0
+        };
+
+        const { data, error } = await supabaseAdmin.from('enrollments').insert(supabaseData).select().single();
+        if (error) {
+            console.error('Supabase createEnrollment error:', error);
+            throw error;
+        }
+
+        return {
+            ...data,
+            user_id: data.student_id
+        };
     }
 };
