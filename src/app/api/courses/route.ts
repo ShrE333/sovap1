@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
             description: data.description || `AI-generated course specializing in ${data.title}. Full curriculum and assessments included.`,
             modules: data.modules,
             estimated_hours: data.estimatedHours || 10,
-            college_id: user.collegeId!,
+            college_id: user.collegeId || null,
             teacher_id: user.id,
             status: 'published' // Make it visible to students immediately
         });
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
         console.error('Create course error:', error);
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { error: error instanceof Error ? error.message : 'Internal server error' },
             { status: 500 }
         );
     }
@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
     } catch (error) {
         console.error('Get courses error:', error);
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { error: error instanceof Error ? error.message : 'Internal server error' },
             { status: 500 }
         );
     }

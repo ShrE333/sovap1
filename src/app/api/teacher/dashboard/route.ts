@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
     } catch (error) {
         console.error('Get teacher dashboard error:', error);
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { error: error instanceof Error ? error.message : 'Internal server error' },
             { status: 500 }
         );
     }
