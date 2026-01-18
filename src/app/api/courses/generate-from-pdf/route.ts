@@ -35,7 +35,6 @@ export async function POST(req: NextRequest) {
             teacher_id: user.id,
             college_id: user.collegeId,
             status: 'pending_approval',
-            estimated_hours: 12,
             modules: []
         });
 

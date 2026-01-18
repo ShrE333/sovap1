@@ -36,7 +36,6 @@ export async function POST(req: NextRequest) {
             title: data.title,
             description: data.description || `AI-generated course specializing in ${data.title}. Full curriculum and assessments included.`,
             modules: data.modules,
-            estimated_hours: data.estimatedHours || 10,
             college_id: user.collegeId || null,
             teacher_id: user.id,
             status: 'published' // Make it visible to students immediately
