@@ -70,6 +70,20 @@ export interface Attempt {
   confidence: ConfidenceLevel;
 }
 
+export interface StudentProgressModel {
+  studentId: string;
+  courseId: string;
+  overallConfidence: number;
+  masteryScore: number;
+  completedTopics: string[];
+  failedLabs: string[];
+  confidenceMap: Record<string, number[]>;
+  baselineResults: {
+    topicId: string;
+    tag: 'MASTER' | 'GUESS' | 'UNKNOWN' | 'MISCONCEPTION';
+  }[];
+}
+
 export type LabStatus = 'locked' | 'available' | 'in_progress' | 'completed' | 'failed';
 
 export interface ChatMessage {
