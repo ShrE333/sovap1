@@ -11,10 +11,22 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from neo4j import GraphDatabase
 
+from fastapi.middleware.cors import CORSMiddleware
+
 load_dotenv()
 
 # Initialize Clients
 app = FastAPI(title="SOVAP Course Generator Lab")
+
+# Add CORS Middleware for Production Bridge
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://sovap.in", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # Vector DB Client
@@ -287,4 +299,5 @@ async def get_status(course_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
