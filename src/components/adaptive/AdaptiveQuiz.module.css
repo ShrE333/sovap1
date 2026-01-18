@@ -1,0 +1,103 @@
+.quizWrapper {
+    width: 100%;
+}
+
+.progressHeader {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.progBar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.progFill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.questionCard {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 2rem;
+}
+
+.questionText {
+    font-size: 1.4rem;
+    margin-bottom: 2rem;
+    line-height: 1.4;
+}
+
+.optionsGrid {
+    display: grid;
+    gap: 1rem;
+}
+
+.optionBtn {
+    padding: 1rem 1.5rem;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1rem;
+}
+
+.optionBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.selected {
+    border-color: var(--accent);
+    background: rgba(79, 70, 229, 0.2);
+}
+
+.correct {
+    border-color: var(--success);
+    background: rgba(34, 197, 94, 0.2);
+}
+
+.incorrect {
+    border-color: var(--error);
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.confidenceSection {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+}
+
+.slider {
+    width: 100%;
+    margin: 1rem 0;
+    accent-color: var(--accent);
+}
+
+.sliderLabels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+}
+
+.explanation {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(79, 70, 229, 0.1);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 12px 12px 0;
+}

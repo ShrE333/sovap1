@@ -1,25 +1,44 @@
+
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLearningState } from '@/lib/contexts/LearningStateContext';
 import styles from './learn.module.css';
 import LabComponent from '@/components/adaptive/LabComponent';
+import AdaptiveQuiz from '@/components/adaptive/AdaptiveQuiz';
+import { selectDynamicMCQs } from '@/lib/engine/mcq-engine';
+import { owaspCourse } from '@/lib/data/owasp-course';
 
 export default function LearnPage({ params }: { params: Promise<{ courseId: string }> }) {
     const { courseId } = React.use(params);
     const { state, currentTopic, submitProgress, isLoading } = useLearningState();
     const [confidence, setConfidence] = useState(0.5);
     const [showQuiz, setShowQuiz] = useState(false);
+    const [selectedMCQs, setSelectedMCQs] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (showQuiz && currentTopic) {
+            // Find current module
+            const module = owaspCourse.modules.find(m => m.topics.some(t => t.id === currentTopic.id));
+            if (module && module.mcqs.length > 0) {
+                const stateForEngine = {
+                    masteryTags: {}, // Should pull from Baseline in real app
+                    recentConfidence: []
+                };
+                const picked = selectDynamicMCQs(module.mcqs, stateForEngine, 1); // 1 for demo, 30 for prod
+                setSelectedMCQs(picked);
+            }
+        }
+    }, [showQuiz, currentTopic]);
 
     if (isLoading) return <div className="loader">Initializing Engine...</div>;
     if (!currentTopic) return <div className="completed">Course Completed! 🎉</div>;
 
-    const handleNext = () => {
-        // In a real app, this would be based on a quiz score
-        // For demo, we assume 100% score if they click "Complete"
-        submitProgress(currentTopic.id, confidence, 1.0);
+    const handleQuizComplete = (score: number, avgConfidence: number) => {
+        // Normalize 1-5 confidence to 0-1 for the engine
+        const normalizedConfidence = avgConfidence / 5;
+        submitProgress(currentTopic.id, normalizedConfidence, score);
         setShowQuiz(false);
-        setConfidence(0.5);
     };
 
     return (
@@ -43,10 +62,18 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
                             <p><strong>Scenario:</strong> Imagine you are testing a banking application...</p>
                         </div>
 
-                        {/* Show Lab if confidence is high or after reading */}
-                        {confidence > 0.7 && (
+                        {/* Phase 7: Lab Gating Logic */}
+                        {(state.topicMastery[currentTopic.id] || false) ? (
                             <div className="animate-fade-in" style={{ marginTop: '3rem' }}>
+                                <div style={{ marginBottom: '1rem', padding: '0.8rem', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid var(--success)', borderRadius: '8px', color: 'var(--success)', fontSize: '0.9rem' }}>
+                                    ✨ Mastery Verified: Lab Unlocked
+                                </div>
                                 <LabComponent labId={currentTopic.id} />
+                            </div>
+                        ) : (
+                            <div style={{ marginTop: '3rem', padding: '2rem', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--glass-border)', borderRadius: '12px', textAlign: 'center' }}>
+                                <p style={{ color: 'var(--text-muted)' }}>🔒 Hands-on Lab is locked.</p>
+                                <p style={{ fontSize: '0.8rem' }}>Complete the <strong>Knowledge Verification</strong> with high confidence to unlock.</p>
                             </div>
                         )}
                     </div>
@@ -101,15 +128,19 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
 
             {showQuiz && (
                 <div className={styles.modalOverlay}>
-                    <div className={`${styles.modal} glass`}>
+                    <div className={`${styles.modal} glass`} style={{ maxWidth: '800px', width: '90%' }}>
                         <h2>Knowledge Verification</h2>
-                        <p>To advance, solve this small challenge: What is the primary cause of IDOR?</p>
-                        <div className={styles.options}>
-                            <button className={styles.option}>Missing Authorization Check</button>
-                            <button className={styles.option}>SQL Syntax Error</button>
-                            <button className={styles.option}>Weak Password Policy</button>
-                        </div>
-                        <button className="btn-primary" onClick={handleNext}>Submit Response</button>
+                        {selectedMCQs.length > 0 ? (
+                            <AdaptiveQuiz
+                                mcqs={selectedMCQs}
+                                onComplete={handleQuizComplete}
+                            />
+                        ) : (
+                            <div>
+                                <p>Calculating adaptive questions...</p>
+                                <button className="btn-secondary" onClick={() => setShowQuiz(false)}>Cancel</button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

@@ -29,10 +29,20 @@ export interface Topic {
   estimatedTime: number; // in minutes
 }
 
+export interface MCQ {
+  id: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  difficulty: 'basic' | 'intermediate' | 'advanced';
+  explanation: string;
+}
+
 export interface Module {
   id: string;
   title: string;
   topics: Topic[];
+  mcqs: MCQ[]; // Pool of 70
 }
 
 export interface Course {
