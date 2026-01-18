@@ -4,7 +4,7 @@ import json
 import uuid
 import asyncio
 from typing import List, Optional
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -98,7 +98,9 @@ class QAStatus(BaseModel):
     suggested_fixes: List[str]
 
 class CourseRequest(BaseModel):
+    course_id: str
     title: str
+    description: str | None = None
     target_level: str = "Beginner"
     modules_count: int = 5
     labs_per_module: int = 1
