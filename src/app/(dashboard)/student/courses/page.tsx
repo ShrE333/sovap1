@@ -155,11 +155,15 @@ export default function StudentCoursesPage() {
                                 <div className={styles.courseStats}>
                                     <div className={styles.stat}>
                                         <span className={styles.statIcon}>📚</span>
-                                        <span>{course.modules?.length || 0} Modules</span>
+                                        <span>
+                                            {course.modules?.length > 0
+                                                ? `${course.modules.length} Modules`
+                                                : (course.status === 'published' ? 'AI Generating...' : 'Pending AI')}
+                                        </span>
                                     </div>
                                     <div className={styles.stat}>
                                         <span className={styles.statIcon}>⏱️</span>
-                                        <span>{course.estimated_hours}h</span>
+                                        <span>{course.modules?.length > 0 ? `${course.modules.length * 2}h` : 'TBD'}</span>
                                     </div>
                                     <div className={styles.stat}>
                                         <span className={styles.statIcon}>🎯</span>

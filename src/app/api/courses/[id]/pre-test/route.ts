@@ -56,11 +56,49 @@ export async function GET(
         const user = await verifyAuth(req);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        // Normalize ID for demo
-        const courseRef = id.includes('OWASP') ? 'OWASP-TOP-10' : 'OWASP-TOP-10';
-        const questions = MOCK_PRE_TESTS[courseRef] || [];
+        // Normalization for demo vs real courses
+        if (id === 'owasp-top-10' || id === 'OWASP-TOP-10') {
+            return NextResponse.json({ questions: MOCK_PRE_TESTS['OWASP-TOP-10'] });
+        }
 
-        return NextResponse.json({ questions });
+        // Try to fetch from GitHub Storage for AI Course
+        try {
+            const GITHUB_BASE = "https://raw.githubusercontent.com/Shrees-Projects/sovap-course-storage/main";
+            const response = await fetch(`${GITHUB_BASE}/courses/${id}/master.json`);
+            if (response.ok) {
+                const courseData = await response.json();
+                // Extract MCQs from first few modules as diagnostic
+                const questions = (courseData.modules || []).slice(0, 3).flatMap((m: any) => m.mcqs || []).slice(0, 5);
+                if (questions.length > 0) {
+                    return NextResponse.json({ questions });
+                }
+            }
+        } catch (e) {
+            console.warn("Could not fetch diagnostic from GitHub, using fallback:", e);
+        }
+
+        // Final Fallback: Generate dynamic placeholder questions based on ID/Context
+        // In a real RAG system, we'd query the vector DB here.
+        const fallbackQuestions = [
+            {
+                id: 'diag-1',
+                topicId: 'Fundamentals',
+                question: `What is your current experience level with ${id.split('-')[0]}?`,
+                options: ["Beginner", "Intermediate", "Professional", "Academic"],
+                correctIndex: 0,
+                difficulty: 'basic'
+            },
+            {
+                id: 'diag-2',
+                topicId: 'Core_Concepts',
+                question: `Which of these best describes a core challenge in this field?`,
+                options: ["Data Management", "Security", "Scalability", "Accuracy"],
+                correctIndex: 0,
+                difficulty: 'basic'
+            }
+        ];
+
+        return NextResponse.json({ questions: fallbackQuestions });
     } catch (error) {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
@@ -77,10 +115,34 @@ export async function POST(
 
         const { answers } = await req.json(); // Array of { questionId, answerIndex, confidence }
 
+        // Fetch original questions to verify answers
+        let questions: any[] = [];
+        if (id === 'owasp-top-10' || id === 'OWASP-TOP-10') {
+            questions = MOCK_PRE_TESTS['OWASP-TOP-10'];
+        } else {
+            // Try GitHub first
+            try {
+                const GITHUB_BASE = "https://raw.githubusercontent.com/Shrees-Projects/sovap-course-storage/main";
+                const response = await fetch(`${GITHUB_BASE}/courses/${id}/master.json`);
+                if (response.ok) {
+                    const courseData = await response.json();
+                    questions = (courseData.modules || []).flatMap((m: any) => m.mcqs || []);
+                }
+            } catch (e) { }
+
+            // If still empty, it might be the fallback questions
+            if (questions.length === 0) {
+                questions = [
+                    { id: 'diag-1', topicId: 'Fundamentals', correctIndex: 0 },
+                    { id: 'diag-2', topicId: 'Core_Concepts', correctIndex: 0 }
+                ];
+            }
+        }
+
         // Logic to calculate Cognitive Matrix
         const results = answers.map((ans: any) => {
-            const courseRef = id.includes('OWASP') ? 'OWASP-TOP-10' : 'OWASP-TOP-10';
-            const original = MOCK_PRE_TESTS[courseRef].find(q => q.id === ans.questionId);
+            const original = questions.find(q => q.id === ans.questionId);
+            if (!original) return null;
 
             const isCorrect = ans.answerIndex === original.correctIndex;
             const confidence = ans.confidence; // 1 to 5
@@ -92,7 +154,7 @@ export async function POST(
             else tag = 'UNKNOWN';
 
             return { topicId: original.topicId, tag, isCorrect, confidence };
-        });
+        }).filter(Boolean);
 
         // Generate Roadmap based on results
         const roadmap = results.map((res: any) => {

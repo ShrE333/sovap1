@@ -260,14 +260,29 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
                 )
                 
                 # Save PDF
+                import base64
                 with open(pdf_path, "rb") as f:
-                    content = f.read()
-                push_to_gh(
-                    f"courses/{course_id}/source.pdf",
-                    f"course PDF for {course_id}",
-                    content,
-                    is_binary=True
-                )
+                    pdf_content = f.read()
+                
+                # Check if it's binary or text for PyGithub
+                try:
+                    push_to_gh(
+                        f"courses/{course_id}/source.pdf",
+                        f"course PDF for {course_id}",
+                        pdf_content,
+                        is_binary=True
+                    )
+                except Exception as p_err:
+                    print(f"[GH-PDF-ERR] Failed to push PDF: {str(p_err)}")
+                    # Try base64 fallback if direct bytes fail
+                    encoded = base64.b64encode(pdf_content).decode('ascii')
+                    push_to_gh(
+                        f"courses/{course_id}/source.pdf",
+                        f"course PDF for {course_id}",
+                        encoded,
+                        is_binary=True
+                    )
+                
                 print(f"[+] Successfully pushed to GitHub: {gh_repo_name}")
             else:
                 # Local Save
