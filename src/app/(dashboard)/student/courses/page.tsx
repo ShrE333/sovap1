@@ -15,72 +15,178 @@ interface Course {
     teacherName?: string;
 }
 
+interface Enrollment {
+    courseId: string;
+    progress: number;
+    lastAccessed: string;
+    status: 'active' | 'completed' | 'paused';
+}
+
 export default function StudentCoursesPage() {
     const [courses, setCourses] = useState<Course[]>([]);
+    const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState<'all' | 'enrolled' | 'available'>('all');
 
     useEffect(() => {
-        loadCourses();
+        loadData();
     }, []);
 
-    const loadCourses = async () => {
+    const loadData = async () => {
         try {
             // Fetch published courses
-            const response = await apiCall('/api/courses?status=published');
-            const data = await response.json();
-            setCourses(data.courses || []);
+            const coursesRes = await apiCall('/api/courses?status=published');
+            const coursesData = await coursesRes.json();
+            setCourses(coursesData.courses || []);
+
+            // Fetch enrollments
+            const enrollRes = await apiCall('/api/enrollments');
+            const enrollData = await enrollRes.json();
+            setEnrollments(enrollData.enrollments || []);
         } catch (error) {
-            console.error('Failed to load courses:', error);
+            console.error('Failed to load data:', error);
         } finally {
             setLoading(false);
         }
     };
 
+    const getEnrollment = (courseId: string) => {
+        return enrollments.find(e => e.courseId === courseId);
+    };
+
+    const filteredCourses = courses.filter(course => {
+        const enrollment = getEnrollment(course.id);
+        if (filter === 'enrolled') return !!enrollment;
+        if (filter === 'available') return !enrollment;
+        return true;
+    });
+
     return (
         <div className={styles.container}>
             <header className={styles.header}>
-                <h1 className="gradient-text">My Learning Path</h1>
-                <p>Choose a course and let our AI adapt to your cognitive style.</p>
+                <div>
+                    <h1 className="gradient-text">My Learning Journey</h1>
+                    <p>AI-powered adaptive learning tailored to your cognitive profile</p>
+                </div>
+
+                <div className={styles.filterTabs}>
+                    <button
+                        className={filter === 'all' ? styles.activeTab : styles.tab}
+                        onClick={() => setFilter('all')}
+                    >
+                        All Courses
+                    </button>
+                    <button
+                        className={filter === 'enrolled' ? styles.activeTab : styles.tab}
+                        onClick={() => setFilter('enrolled')}
+                    >
+                        My Courses
+                    </button>
+                    <button
+                        className={filter === 'available' ? styles.activeTab : styles.tab}
+                        onClick={() => setFilter('available')}
+                    >
+                        Explore
+                    </button>
+                </div>
             </header>
 
             {loading ? (
-                <div style={{ textAlign: 'center', padding: '3rem' }}>Loading courses...</div>
-            ) : courses.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                    No courses available yet. Check back later!
+                <div className={styles.loadingState}>
+                    <div className={styles.spinner}></div>
+                    <p>Loading your personalized courses...</p>
+                </div>
+            ) : filteredCourses.length === 0 ? (
+                <div className={styles.emptyState}>
+                    <div className={styles.emptyIcon}>📚</div>
+                    <h3>No courses found</h3>
+                    <p>
+                        {filter === 'enrolled'
+                            ? 'You haven\'t enrolled in any courses yet. Explore available courses!'
+                            : 'No courses available yet. Check back later!'}
+                    </p>
                 </div>
             ) : (
                 <div className={styles.coursesGrid}>
-                    {courses.map(course => (
-                        <div key={course.id} className={`${styles.courseCard} glass-card`}>
-                            <div className={styles.cardHeader}>
-                                <h3>{course.title}</h3>
-                                {/* Enrolled logic to be added later */}
-                            </div>
-                            <p className={styles.description}>{course.description}</p>
+                    {filteredCourses.map((course, index) => {
+                        const enrollment = getEnrollment(course.id);
+                        const isEnrolled = !!enrollment;
 
-                            <div className={styles.courseStats}>
-                                <div className={styles.stat}>
-                                    <span className={styles.statIcon}>📚</span>
-                                    <span>{course.modules?.length || 0} Modules</span>
-                                </div>
-                                <div className={styles.stat}>
-                                    <span className={styles.statIcon}>⏱️</span>
-                                    <span>~{course.estimated_hours}h</span>
-                                </div>
-                                <div className={styles.stat}>
-                                    <span className={styles.statIcon}>👨‍🏫</span>
-                                    <span>{course.teacherName}</span>
-                                </div>
-                            </div>
+                        return (
+                            <div
+                                key={course.id}
+                                className={`${styles.courseCard} glass-card`}
+                                style={{ animationDelay: `${index * 0.1}s` }}
+                            >
+                                <div className={styles.cardGlow}></div>
 
-                            <div className={styles.cardActions}>
-                                <Link href={`/student/courses/${course.id}/pre-test`} className="btn-primary" style={{ width: '100%', textAlign: 'center' }}>
-                                    Take Diagnostic Pre-Test
-                                </Link>
+                                <div className={styles.cardHeader}>
+                                    <div className={styles.titleSection}>
+                                        <h3>{course.title}</h3>
+                                        {isEnrolled && (
+                                            <span className={styles.enrolledBadge}>
+                                                ✓ Enrolled
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className={styles.courseId}>#{course.id.slice(0, 6)}</div>
+                                </div>
+
+                                <p className={styles.description}>{course.description}</p>
+
+                                {isEnrolled && enrollment && (
+                                    <div className={styles.progressSection}>
+                                        <div className={styles.progressHeader}>
+                                            <span>Progress</span>
+                                            <span className={styles.progressPercent}>{enrollment.progress}%</span>
+                                        </div>
+                                        <div className={styles.progressBar}>
+                                            <div
+                                                className={styles.progressFill}
+                                                style={{ width: `${enrollment.progress}%` }}
+                                            ></div>
+                                        </div>
+                                        <div className={styles.lastAccessed}>
+                                            Last accessed: {new Date(enrollment.lastAccessed).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className={styles.courseStats}>
+                                    <div className={styles.stat}>
+                                        <span className={styles.statIcon}>📚</span>
+                                        <span>{course.modules?.length || 0} Modules</span>
+                                    </div>
+                                    <div className={styles.stat}>
+                                        <span className={styles.statIcon}>⏱️</span>
+                                        <span>{course.estimated_hours}h</span>
+                                    </div>
+                                    <div className={styles.stat}>
+                                        <span className={styles.statIcon}>🎯</span>
+                                        <span>Adaptive</span>
+                                    </div>
+                                </div>
+
+                                <div className={styles.cardActions}>
+                                    {isEnrolled ? (
+                                        <Link
+                                            href={`/learn/${course.id}`}
+                                            className="btn-primary"
+                                        >
+                                            Continue Learning →
+                                        </Link>
+                                    ) : (
+                                        <Link
+                                            href={`/student/courses/${course.id}/pre-test`}
+                                            className="btn-primary"
+                                        >
+                                            Start with Diagnostic Test
+                                        </Link>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>
