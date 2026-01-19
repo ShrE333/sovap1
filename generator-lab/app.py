@@ -3,15 +3,26 @@ import os
 import json
 import uuid
 import asyncio
+import logging
+import sys
+import base64
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from groq import Groq
+from groq import AsyncGroq
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from neo4j import GraphDatabase
+
+# Configure Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+logger = logging.getLogger(__name__)
 
 # Load .env only if it exists (for local dev)
 if os.path.exists(".env"):
@@ -37,10 +48,11 @@ app.add_middleware(
 # Defensive Client Initialization
 groq_api_key = os.getenv("GROQ_API_KEY")
 if not groq_api_key:
-    print("[!] WARNING: GROQ_API_KEY not found. Course generation will fail.")
+    logger.warning("GROQ_API_KEY not found. Course generation will fail.")
     client = None
 else:
-    client = Groq(api_key=groq_api_key)
+    client = AsyncGroq(api_key=groq_api_key)
+    logger.info("AsyncGroq client initialized.")
 
 # Vector DB Client
 qdrant_url = os.getenv("QDRANT_URL")
@@ -136,49 +148,50 @@ async def health():
 
 @app.post("/generate")
 async def generate_course(request: CourseRequest, background_tasks: BackgroundTasks):
-    # Ensure background task uses the provided ID
+    logger.info(f"Received request to generate course: {request.title} ({request.course_id})")
     background_tasks.add_task(generate_pipeline, request.course_id, request)
     return {"message": "Generation started", "course_id": request.course_id}
 
 @app.post("/generate-from-pdf")
 async def generate_from_pdf(
+    background_tasks: BackgroundTasks,
     course_id: str = Form(...),
     title: str = Form(...),
-    file: UploadFile = File(...),
-    background_tasks: BackgroundTasks = BackgroundTasks()
+    file: UploadFile = File(...)
 ):
-    print(f"[*] PDF Received: {file.filename} for Course: {course_id}")
+    logger.info(f"PDF Received: {file.filename} for Course: {course_id}")
     background_tasks.add_task(generate_pipeline, course_id, CourseRequest(course_id=course_id, title=title, description=f"PDF: {file.filename}"))
     return {"message": "PDF Processing started", "course_id": course_id}
 
 async def generate_pipeline(course_id: str, request: CourseRequest):
-    print(f"[*] Starting pipeline for {course_id}: {request.title}")
+    logger.info(f"STARTING PIPELINE for {course_id}: {request.title}")
     
     if not client:
-        print(f"[!] ERROR: Groq Client not initialized. Check GROQ_API_KEY environment variable.")
+        logger.error(f"Groq Client not initialized. Check GROQ_API_KEY.")
         return
 
     try:
         # --- PHASE 1.1: SYLLABUS GENERATION ---
-        print(f"[*] Phase 1.1: Generating high-level Syllabus...")
+        logger.info(f"Phase 1.1: Generating high-level Syllabus for {request.title}...")
         ctx = request.description if request.description and len(request.description) > 5 else f"A comprehensive course on {request.title}"
         syllabus_prompt = f"Create a detailed syllabus for '{request.title}'. Context: {ctx}. Return JSON with list of {request.modules_count} modules, each with 3 subtopics."
         
-        syllabus_resp = client.chat.completions.create(
+        syllabus_resp = await client.chat.completions.create(
             messages=[{"role": "user", "content": syllabus_prompt}],
             model="llama3-70b-8192",
             response_format={"type": "json_object"}
         )
         syllabus = json.loads(syllabus_resp.choices[0].message.content)
+        logger.info(f"Syllabus generated with {len(syllabus.get('modules', []))} modules.")
         
         # --- PHASE 1.2: DEPTH EXPANSION (Recursive) ---
         full_course = {"course_id": course_id, "title": request.title, "modules": []}
         
         for i, module in enumerate(syllabus.get("modules", [])):
-            print(f"[*] Expanding Module {i+1}: {module['title']}...")
+            logger.info(f"Expanding Module {i+1}: {module['title']}...")
             module_prompt = f"Write deep educational theory, a code lab, and {request.mcqs_per_module} MCQs for the module: {module['title']}. Topics: {module.get('subtopics', [])}. Overall Context: {ctx}"
             
-            chunk_resp = client.chat.completions.create(
+            chunk_resp = await client.chat.completions.create(
                 messages=[{"role": "user", "content": module_prompt}],
                 model="llama3-70b-8192",
                 response_format={"type": "json_object"}
@@ -187,18 +200,19 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
             full_course["modules"].append(module_expanded)
 
         # --- PHASE 2: AI QA AGENT ---
-        print(f"[*] Phase 2: Running AI QA Agent...")
+        logger.info(f"Phase 2: Running AI QA Agent...")
         qa_agent = CourseQA(course_id)
         report = await qa_agent.validate(full_course)
         
         if report.status == "FAIL":
-            print(f"[!] QA FAILED for {course_id}. Errors: {report.critical_errors}")
+            logger.error(f"QA FAILED for {course_id}. Errors: {report.critical_errors}")
+            # Even if QA fails, we might want to see what was generated, but the logic currently stops here.
             return
 
-        print(f"[+] QA PASSED for {course_id} with score {report.score}/100")
+        logger.info(f"QA PASSED for {course_id} with score {report.score}/100")
 
         # --- PHASE 3: STORAGE (GitHub) ---
-        print(f"[*] Phase 3: Committing course to GitHub...")
+        logger.info(f"Phase 3: Committing course to GitHub...")
         
         try:
             # 1. Generate PDF
@@ -216,9 +230,13 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
                 pdf.set_font("helvetica", style="B", size=14)
                 pdf.cell(0, 10, txt=f"Module: {module.get('title', 'Untitled')}", ln=1)
                 pdf.set_font("helvetica", size=11)
-                pdf.multi_cell(0, 7, txt=str(module.get("content", "No content generated.")))
+                # Cleanup text for Latin-1 since default helvetica doesn't support full UTF-8
+                content_text = str(module.get("content", "No content generated."))
+                safe_text = content_text.encode('latin-1', 'replace').decode('latin-1')
+                pdf.multi_cell(0, 7, txt=safe_text)
                 
             pdf.output(pdf_path)
+            logger.info(f"Local PDF generated at {pdf_path}")
 
             # 2. Upload to GitHub
             from github import Github, GithubException
@@ -231,30 +249,36 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
                 repo = g.get_repo(gh_repo_name)
                 
                 # Helper to update or create
-                def push_to_gh(path, message, content, is_binary=False):
+                def push_to_gh(path, message, content):
                     try:
-                        contents = repo.get_contents(path, ref=gh_branch)
-                        repo.update_file(
-                            path=path,
-                            message=f"Update {message}",
-                            content=content,
-                            sha=contents.sha,
-                            branch=gh_branch
-                        )
-                        print(f"[GH] Updated: {path}")
-                    except GithubException as e:
-                        if e.status == 404:
-                            repo.create_file(
+                        try:
+                            # Try to get existing file
+                            contents = repo.get_contents(path, ref=gh_branch)
+                            sha = contents.sha
+                            repo.update_file(
                                 path=path,
-                                message=f"Create {message}",
+                                message=f"Update {message}",
                                 content=content,
+                                sha=sha,
                                 branch=gh_branch
                             )
-                            print(f"[GH] Created: {path}")
-                        else:
-                            raise
+                            logger.info(f"GitHub Updated: {path}")
+                        except GithubException as e:
+                            if e.status == 404:
+                                repo.create_file(
+                                    path=path,
+                                    message=f"Create {message}",
+                                    content=content,
+                                    branch=gh_branch
+                                )
+                                logger.info(f"GitHub Created: {path}")
+                            else:
+                                raise
+                    except Exception as ge:
+                        logger.error(f"Failed to push {path} to GitHub: {str(ge)}")
 
                 # Save JSON
+                logger.info(f"Pushing master.json for {course_id}...")
                 push_to_gh(
                     f"courses/{course_id}/master.json",
                     f"master JSON for {course_id}",
@@ -262,35 +286,22 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
                 )
                 
                 # Save PDF
-                import base64
                 with open(pdf_path, "rb") as f:
                     pdf_content = f.read()
                 
-                # Check if it's binary or text for PyGithub
-                try:
-                    push_to_gh(
-                        f"courses/{course_id}/source.pdf",
-                        f"course PDF for {course_id}",
-                        pdf_content,
-                        is_binary=True
-                    )
-                except Exception as p_err:
-                    print(f"[GH-PDF-ERR] Failed to push PDF: {str(p_err)}")
-                    # Try base64 fallback if direct bytes fail
-                    encoded = base64.b64encode(pdf_content).decode('ascii')
-                    push_to_gh(
-                        f"courses/{course_id}/source.pdf",
-                        f"course PDF for {course_id}",
-                        encoded,
-                        is_binary=True
-                    )
+                logger.info(f"Pushing source.pdf for {course_id}...")
+                push_to_gh(
+                    f"courses/{course_id}/source.pdf",
+                    f"course PDF for {course_id}",
+                    pdf_content
+                )
                 
-                print(f"[+] Successfully pushed to GitHub: {gh_repo_name}")
+                logger.info(f"Successfully finished GitHub storage phase for {course_id}")
             else:
-                # Local Save
+                # Local Save Fallback
                 with open(f"storage/{course_id}/master.json", "w") as f:
                     json.dump(full_course, f, indent=2)
-                print(f"[!] GITHUB_TOKEN or REPO not set. Course saved locally in storage/{course_id}/")
+                logger.warning(f"GITHUB_TOKEN or REPO not set. Course saved locally in storage/{course_id}/")
         except Exception as e:
             print(f"[GH-ERROR] Storage phase failed for {course_id}: {str(e)}")
 
@@ -303,7 +314,7 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
         await build_knowledge_graph(course_id, full_course)
 
     except Exception as e:
-        print(f"[EX] Pipeline failed for {course_id}: {str(e)}")
+        logger.error(f"Pipeline CRITICAL failure for {course_id}: {str(e)}", exc_info=True)
 
 class CourseQA:
     def __init__(self, course_id: str):
@@ -323,7 +334,7 @@ class CourseQA:
         Return a JSON report with: status (PASS/FAIL), score (0-100), critical_errors (list), and suggested_fixes (list).
         """
         
-        chat_completion = client.chat.completions.create(
+        chat_completion = await client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
             model="llama3-70b-8192",
             response_format={"type": "json_object"}
@@ -404,7 +415,14 @@ async def build_knowledge_graph(course_id: str, course_data: dict):
 
 @app.get("/status/{course_id}")
 async def get_status(course_id: str):
-    return {"course_id": course_id, "mode": "R2_ACTIVE_STORAGE"}
+    github_repo = os.getenv("GITHUB_REPO", "NOT_SET")
+    return {
+        "course_id": course_id, 
+        "storage_mode": "GITHUB",
+        "repository": github_repo,
+        "github_token_present": bool(os.getenv("GITHUB_TOKEN")),
+        "message": "Check GitHub repository for course files."
+    }
 
 if __name__ == "__main__":
     import uvicorn
