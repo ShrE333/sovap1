@@ -63,6 +63,17 @@ else:
     print("[!] WARNING: Qdrant configuration incomplete. Vectorizing will be skipped.")
     qdrant_client = None
 
+# Global Embedding Model Singleton (To prevent OOM restarts on Render)
+_embedding_model = None
+
+def get_embedding_model():
+    global _embedding_model
+    if _embedding_model is None:
+        print("[*] Loading SentenceTransformer 'all-MiniLM-L6-v2' (Singleton)...", flush=True)
+        from sentence_transformers import SentenceTransformer
+        _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+    return _embedding_model
+
 # Knowledge Graph Client (Neo4j)
 class Neo4jHandler:
     def __init__(self):
@@ -222,6 +233,7 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
               "title": "{m_title}",
               "theory": "Markdown formatted deep theory content...",
               "code_lab": "Detailed Markdown formatted lab guide...",
+              "prerequisites": ["List of concept names needed BEFORE this module"],
               "mcqs": [
                 {{
                   "question": "Deep conceptual question",
@@ -241,6 +253,10 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
             )
             module_expanded = json.loads(chunk_resp.choices[0].message.content)
             full_course["modules"].append(module_expanded)
+            
+            # Memory Cleanup: Free up string memory after each step
+            import gc
+            gc.collect()
 
         # --- PHASE 2: AI QA AGENT ---
         print(f"[*] Phase 2: Running AI QA Agent...", flush=True)
@@ -396,8 +412,7 @@ async def vectorize_course(course_id: str, course_data: dict):
         print("[!] Qdrant not configured. Skipping vectorization.")
         return
 
-    from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer('all-MiniLM-L6-v2') # Standard efficient embedder
+    model = get_embedding_model()
 
     points = []
     for module in course_data.get("modules", []):
@@ -408,6 +423,7 @@ async def vectorize_course(course_id: str, course_data: dict):
         chunks = [c.strip() for c in theory.split("\n\n") if len(c.strip()) > 50]
         
         for idx, chunk in enumerate(chunks):
+            # Use singleton model for encoding
             embedding = model.encode(chunk).tolist()
             point_id = str(uuid.uuid4())
             
