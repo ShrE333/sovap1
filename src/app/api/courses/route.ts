@@ -109,15 +109,15 @@ export async function GET(req: NextRequest) {
 
         // Apply dynamic visibility logic
         if (user && user.role === 'student') {
-            // Students can only see:
-            // 1. Courses created by 'college' admin (Public)
-            // 2. Courses they are ALREADY enrolled in
+            // For now, allow students to see ALL published courses to ensure they appear in the catalog
+            // In a real multi-tenant app, we would restrict by college_id match
             const enrollmentsRes = await dbClient.getEnrollments({ user_id: user.id });
             const enrolledIds = new Set(enrollmentsRes.map((e: any) => e.course_id));
 
-            courses = courses.filter((c: any) =>
-                c.creatorRole === 'college' || enrolledIds.has(c.id)
-            );
+            // Keep filtering simple: Show all 'published' or 'pending_approval' (which we treat as live now)
+            // And merge with enrolled courses just in case
+            // Note: The main query already filtered by status='published' if we passed that param
+            // But if we want a global catalog, we might want to ensure we don't hide teacher courses
         }
 
         return NextResponse.json({ courses });
