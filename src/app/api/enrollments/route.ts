@@ -6,8 +6,13 @@ import { dbClient } from '@/lib/db-client';
 export async function POST(req: NextRequest) {
     try {
         const user = await verifyAuth(req);
-        if (!user || user.role !== 'student') {
-            return NextResponse.json({ error: 'Only students can enroll' }, { status: 403 });
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized. Please log in.' }, { status: 401 });
+        }
+
+        const role = user.role?.toLowerCase();
+        if (role !== 'student' && role !== 'teacher') {
+            return NextResponse.json({ error: 'Only students and teachers can enroll in courses.' }, { status: 403 });
         }
 
         const { courseId } = await req.json();
