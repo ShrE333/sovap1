@@ -64,7 +64,8 @@ function Sidebar() {
                 (role === 'admin' && currentPath.startsWith('/admin')) ||
                 (role === 'college' && currentPath.startsWith('/college')) ||
                 (role === 'teacher' && currentPath.startsWith('/teacher')) ||
-                (role === 'student' && currentPath.startsWith('/student'));
+                (role === 'student' && currentPath.startsWith('/student')) ||
+                currentPath.startsWith('/learn'); // Allow universal access to learning environment
 
             if (!isAllowed && !isLoading) {
                 console.warn(`[Security] Redirecting ${role} from unauthorized path: ${currentPath}`);

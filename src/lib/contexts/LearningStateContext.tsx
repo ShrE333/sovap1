@@ -35,7 +35,15 @@ export function LearningStateProvider({ children }: { children: React.ReactNode 
             } else {
                 // 2. Fetch from Internal Proxy (handles Private GitHub Repos)
                 try {
-                    const response = await fetch(`/api/courses/${courseId}/content`);
+                    // Use helper to ensure Authorization header is attached
+                    const token = sessionStorage.getItem('sovap_token');
+                    const headers: Record<string, string> = {};
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+
+                    const response = await fetch(`/api/courses/${courseId}/content`, { headers });
+
                     if (response.ok) {
                         course = await response.json();
                     } else {
