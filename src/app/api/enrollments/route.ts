@@ -16,12 +16,14 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Course ID required' }, { status: 400 });
         }
 
-        // Check if course exists and is published
-        const courses = await dbClient.getCourses({ status: 'published' });
-        const course = courses.find((c: any) => c.id === courseId);
+        // Check if course exists (lookup by full ID or prefix)
+        const allCourses = await dbClient.getCourses();
+        const course = allCourses.find((c: any) =>
+            c.id === courseId || c.id.startsWith(courseId)
+        );
 
         if (!course) {
-            return NextResponse.json({ error: 'Course not found or not available' }, { status: 404 });
+            return NextResponse.json({ error: 'Course not found. Please verify the Course Code (Full ID or first 6 characters).' }, { status: 404 });
         }
 
         // Check if already enrolled

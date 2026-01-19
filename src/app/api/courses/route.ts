@@ -15,7 +15,7 @@ const createCourseSchema = z.object({
 export async function POST(req: NextRequest) {
     try {
         const user = await verifyAuth(req);
-        if (!user || (user.role !== 'teacher' && user.role !== 'college')) {
+        if (!user || (user.role !== 'teacher' && user.role !== 'college' && user.role !== 'admin')) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
             filters.status = 'published';
         } else if (user.role === 'student') {
             filters.status = 'published';
-            filters.college_id = user.collegeId;
+            // Student visibility is handled by dynamic logic below, no college_id filter here
         } else if (user.role === 'teacher' || user.role === 'college') {
             filters.college_id = user.collegeId;
         }
