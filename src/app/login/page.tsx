@@ -30,13 +30,12 @@ export default function LoginPage() {
         <div className={styles.authContainer}>
             <div className={styles.authCard}>
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                    {/* Logo Placeholder - User should place image in public/logo.png */}
                     <h1 style={{ fontFamily: 'Outfit', fontWeight: 800, fontSize: '3rem', letterSpacing: '-2px', lineHeight: 1 }}>
-                        <span style={{ color: 'var(--brand-orange)' }}>SOVAP</span>
+                        <span style={{ color: 'var(--accent-primary)' }}>SOVAP</span>
                     </h1>
-                    <div style={{ height: '4px', width: '40px', background: 'var(--brand-teal)', margin: '0.5rem auto', borderRadius: '2px' }}></div>
+                    <div style={{ height: '4px', width: '40px', background: 'var(--accent-secondary)', margin: '0.5rem auto', borderRadius: '2px' }}></div>
                 </div>
-                <h2 className="outfit" style={{ textAlign: 'center', fontSize: '1.5rem', marginBottom: '0.5rem' }}>Studio Login</h2>
+                <h2 className="outfit" style={{ textAlign: 'center', fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Cognitive Access</h2>
                 <p>Synchronize with your adaptive learning environment.</p>
 
                 {error && (

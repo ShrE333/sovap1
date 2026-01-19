@@ -67,19 +67,19 @@
 .inputGroup input {
     width: 100%;
     padding: 0.8rem 1rem;
-    background: var(--bg-surface);
-    border: 2px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-sm);
-    color: var(--brand-navy);
+    color: white;
     font-size: 0.95rem;
-    font-family: 'DM Sans', sans-serif;
+    font-family: inherit;
     transition: var(--transition);
 }
 
 .inputGroup input:focus {
     outline: none;
-    border-color: var(--brand-teal);
-    box-shadow: 0 0 0 3px rgba(61, 141, 149, 0.1);
+    border-color: var(--accent-secondary);
+    box-shadow: 0 0 0 2px rgba(40, 224, 224, 0.2);
 }
 
 .switch {
