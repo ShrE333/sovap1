@@ -7,15 +7,43 @@ export const ADAPTIVE_THRESHOLDS = {
 };
 
 export function getNextTopic(state: StudentLearningState, course: Course): Topic | null {
-    const allTopics = course.modules.flatMap(m => m.topics);
+    // For AI-generated courses, modules don't have a 'topics' array
+    // Instead, we treat each module itself as a "topic" for learning progression
 
-    // Find topics that haven't been mastered yet.
+    let allTopics: Topic[] = [];
+
+    // Check if course has traditional topic structure
+    const hasTopics = course.modules.some(m => m.topics && m.topics.length > 0);
+
+    if (hasTopics) {
+        // Traditional course with topics
+        allTopics = course.modules.flatMap(m => m.topics || []);
+    } else {
+        // AI-generated course - create synthetic topics from modules
+        allTopics = course.modules.map((module, idx) => ({
+            id: module.id || `module-${idx}`,
+            title: module.title,
+            description: (module as any).theory?.substring(0, 200) || '',
+            content: (module as any).theory || '',
+            prerequisites: idx > 0 ? [module.id || `module-${idx - 1}`] : [],
+            estimatedTime: 45 // Default 45 minutes per module
+        }));
+    }
+
+    if (allTopics.length === 0) {
+        // No topics at all - course is empty
+        return null;
+    }
+
+    // Find topics that haven't been mastered yet
     const unmastered = allTopics.filter(t => !state.topicMastery[t.id]);
 
-    if (unmastered.length === 0) return null; // Course completed
+    if (unmastered.length === 0) {
+        // All topics mastered - course completed!
+        return null;
+    }
 
     // Simple heuristic: Take the first unmastered topic where prerequisites are met
-    // and confidence is high enough.
     for (const topic of unmastered) {
         const confidence = state.topicConfidence[topic.id] || 0;
 
@@ -24,14 +52,12 @@ export function getNextTopic(state: StudentLearningState, course: Course): Topic
 
         if (prereqsMet) {
             if (confidence < ADAPTIVE_THRESHOLDS.BACKTRACK && state.topicConfidence[topic.id] !== undefined) {
-                // This topic is too hard. We need to find "bridge" content or re-teach.
-                // In a real RAG system, we'd query the vector DB for simpler explanations.
-                // For now, return this topic but the UI will show "Basics Mode".
+                // This topic is too hard - return it for review
                 return topic;
             }
             return topic;
         } else {
-            // Prerequisites not met. Find the first unmet prerequisite.
+            // Prerequisites not met - find the first unmet prerequisite
             const unmetPrereqId = topic.prerequisites.find(pId => !state.topicMastery[pId]);
             if (unmetPrereqId) {
                 return allTopics.find(t => t.id === unmetPrereqId) || null;
@@ -39,6 +65,7 @@ export function getNextTopic(state: StudentLearningState, course: Course): Topic
         }
     }
 
+    // Fallback: return first unmastered topic
     return unmastered[0];
 }
 

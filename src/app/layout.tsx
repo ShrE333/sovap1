@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/contexts/AuthContext";
+import { ToastProvider } from "@/lib/contexts/ToastContext";
 
 export const metadata: Metadata = {
-  title: "SOVAP.in | AI-Powered Adaptive Learning",
-  description: "Experience the next generation of personalized education with SOVAP's Cognitive Learning Engine.",
+  title: "SOVAP Studio - AI-Powered Adaptive Learning",
+  description: "Next-generation intelligent learning platform powered by adaptive AI",
 };
 
 export default function RootLayout({
@@ -15,9 +16,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );

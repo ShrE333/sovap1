@@ -1,9 +1,6 @@
-'use client';
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { StudentLearningState, Topic, Course } from '../types';
 import { getNextTopic, updateStateAfterAttempt } from '../engine/adaptive-logic';
-import { owaspCourse } from '../data/owasp-course';
 
 interface LearningContextType {
     state: StudentLearningState | null;
@@ -29,34 +26,30 @@ export function LearningStateProvider({ children }: { children: React.ReactNode 
         try {
             let course: Course | null = null;
 
-            // 1. Check if it's the mock course
-            if (courseId === 'owasp-top-10' || courseId === 'OWASP-TOP-10') {
-                course = owaspCourse;
-            } else {
-                // 2. Fetch from Internal Proxy (handles Private GitHub Repos)
-                try {
-                    // Use helper to ensure Authorization header is attached
-                    const token = sessionStorage.getItem('sovap_token');
-                    const headers: Record<string, string> = {};
-                    if (token) {
-                        headers['Authorization'] = `Bearer ${token}`;
-                    }
-
-                    const response = await fetch(`/api/courses/${courseId}/content`, { headers });
-
-                    if (response.ok) {
-                        course = await response.json();
-                    } else {
-                        console.error("Course fetch failed:", response.status, response.statusText);
-                    }
-                } catch (e) {
-                    console.error("Failed to fetch course api:", e);
+            // Fetch from Internal Proxy (handles Private GitHub Repos)
+            try {
+                // Use helper to ensure Authorization header is attached
+                const token = sessionStorage.getItem('sovap_token');
+                const headers: Record<string, string> = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
                 }
+
+                const response = await fetch(`/api/courses/${courseId}/content`, { headers });
+
+                if (response.ok) {
+                    course = await response.json();
+                } else {
+                    console.error("Course fetch failed:", response.status, response.statusText);
+                }
+            } catch (e) {
+                console.error("Failed to fetch course api:", e);
             }
 
             if (!course) {
-                // Fallback to OWASP for demo if nothing else found
-                course = owaspCourse;
+                console.error(`Course ${courseId} not found. No fallback available.`);
+                setIsLoading(false);
+                return;
             }
 
             setCurrentCourse(course);

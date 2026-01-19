@@ -1,0 +1,76 @@
+.skeleton {
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.08) 50%,
+            rgba(255, 255, 255, 0.04) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: var(--radius-md);
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.card {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.skeletonLine {
+    height: 16px;
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.08) 50%,
+            rgba(255, 255, 255, 0.04) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 4px;
+}
+
+.title {
+    width: 70%;
+    height: 24px;
+}
+
+.subtitle {
+    width: 50%;
+    height: 16px;
+}
+
+.text {
+    width: 100%;
+    margin-bottom: 0.75rem;
+}
+
+.skeletonLines {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+
+.listSkeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.listItem {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}

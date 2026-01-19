@@ -7,7 +7,6 @@ import styles from './learn.module.css';
 import LabComponent from '@/components/adaptive/LabComponent';
 import AdaptiveQuiz from '@/components/adaptive/AdaptiveQuiz';
 import { selectDynamicMCQs } from '@/lib/engine/mcq-engine';
-import { owaspCourse } from '@/lib/data/owasp-course';
 
 export default function LearnPage({ params }: { params: Promise<{ courseId: string }> }) {
     const { courseId } = React.use(params);
