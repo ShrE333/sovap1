@@ -31,6 +31,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Course not found. Please verify the Course Code (Full ID or first 6 characters).' }, { status: 404 });
         }
 
+        if (course.status !== 'published') {
+            return NextResponse.json({ error: 'This course is still being synthesized or audited. Please try again later.' }, { status: 400 });
+        }
+
         // Check if already enrolled
         const enrollments = await dbClient.getEnrollments({ user_id: user.id, course_id: courseId });
         if (enrollments.length > 0) {

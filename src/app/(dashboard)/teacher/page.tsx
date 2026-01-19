@@ -138,7 +138,7 @@ export default function TeacherPage() {
             });
 
             if (response.ok) {
-                alert('✨ Magic AI Task created! Generating course structure...');
+                alert('✨ MAGIC SUCCESS! Course generation started. It will appear on your dashboard as "Generating" and then "Pending Approval".');
                 setShowCreateCourse(false);
                 setNewCourse({ title: '', description: '', estimatedHours: 10 });
                 loadDashboard();
@@ -150,6 +150,25 @@ export default function TeacherPage() {
             console.error('Create course error:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteCourse = async (courseId: string) => {
+        if (!confirm('Are you absolutely sure you want to delete this intelligence unit? This action is irreversible.')) return;
+
+        try {
+            const response = await apiCall(`/api/courses/${courseId}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                loadDashboard();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Failed to delete course');
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
         }
     };
 
@@ -241,21 +260,39 @@ export default function TeacherPage() {
                                                 <span className={styles.publicBadge}>🏛️ PUBLIC</span>
                                             )}
                                         </div>
-                                        <span className={`${styles.statusBadge} ${course.status === 'published' ? styles.statusLive : styles.statusPending}`}>
-                                            {course.status === 'published' ? '🟢 LIVE' : '🕒 PENDING'}
+                                        <span className={`${styles.statusBadge} ${course.status === 'published' ? styles.statusLive :
+                                            course.status === 'generating' ? styles.statusGenerating :
+                                                styles.statusPending
+                                            }`}>
+                                            {course.status === 'published' ? '🟢 LIVE' :
+                                                course.status === 'generating' ? '🧪 GENERATING' :
+                                                    '🕒 PENDING APPROVAL'}
                                         </span>
                                     </div>
                                     <h3 className={styles.courseTitle}>{course.title}</h3>
                                     <p className={styles.courseDesc}>{course.description}</p>
                                     <div className={styles.courseFooter}>
                                         <span className={styles.studentStat}>
-                                            <strong>{course.studentCount}</strong> Students Enrolled
+                                            {course.status === 'published' ? (
+                                                <><strong>{course.studentCount}</strong> Students Enrolled</>
+                                            ) : (
+                                                <em style={{ color: 'var(--text-muted)' }}>{course.status === 'generating' ? 'AI Agent busy...' : 'Awaiting Faculty Audit'}</em>
+                                            )}
                                         </span>
                                         <div className={styles.cardActions}>
                                             {course.isOwner ? (
                                                 <>
-                                                    <button className="btn-secondary small">Analytics</button>
-                                                    <Link href={`/dashboard/learn/${course.id}`} className="btn-primary small">Manage Intelligence</Link>
+                                                    <button
+                                                        className="btn-secondary small"
+                                                        onClick={() => handleDeleteCourse(course.id)}
+                                                        title="Delete Unit"
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                    {course.status === 'published' && <button className="btn-secondary small">Analytics</button>}
+                                                    <Link href={`/dashboard/learn/${course.id}`} className="btn-primary small">
+                                                        {course.status === 'published' ? 'Manage' : 'Preview'}
+                                                    </Link>
                                                 </>
                                             ) : (
                                                 <button

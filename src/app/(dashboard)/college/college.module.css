@@ -196,6 +196,41 @@
     padding-top: 1rem;
 }
 
+.statusMini {
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.statusMini[data-status="generating"] {
+    color: #8b5cf6;
+}
+
+.statusMini[data-status="published"] {
+    color: #22c55e;
+}
+
+.statusMini[data-status="pending_approval"] {
+    color: #f59e0b;
+}
+
+.deleteBtn {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    transition: all 0.2s;
+}
+
+.deleteBtn:hover {
+    background: #ef4444;
+    color: white;
+}
+
 /* Modal */
 .modalOverlay {
     position: fixed;

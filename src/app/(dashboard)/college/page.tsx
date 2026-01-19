@@ -43,14 +43,15 @@ export default function CollegeDashboard() {
         try {
             const [teachersRes, coursesRes] = await Promise.all([
                 apiCall('/api/college/teachers'),
-                apiCall('/api/courses?status=pending_approval')
+                apiCall('/api/courses')
             ]);
 
             const teachersData = await teachersRes.json();
             const coursesData = await coursesRes.json();
 
             setTeachers(teachersData.teachers || []);
-            setPendingCourses((coursesData.courses || []).filter((c: any) => c.status === 'pending_approval'));
+            // setPendingCourses handles the view now
+            setPendingCourses(coursesData.courses || []);
         } catch (error) {
             console.error('Failed to load dashboard:', error);
         } finally {
@@ -101,6 +102,23 @@ export default function CollegeDashboard() {
             }
         } catch (error) {
             console.error('Approve error:', error);
+        }
+    };
+
+    const handleDelete = async (courseId: string) => {
+        if (!confirm('Permanent system purge of this intelligence unit?')) return;
+        try {
+            const response = await apiCall(`/api/courses/${courseId}`, {
+                method: 'DELETE',
+            });
+            if (response.ok) {
+                setPendingCourses(prev => prev.filter(c => c.id !== courseId));
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Purge failed');
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
         }
     };
 
@@ -205,12 +223,22 @@ export default function CollegeDashboard() {
                                 {pendingCourses.map((course, idx) => (
                                     <div key={course.id} className={styles.approvalItem} style={{ animationDelay: `${idx * 0.05}s` }}>
                                         <div className={styles.courseHeader}>
-                                            <h3>{course.title}</h3>
-                                            <p>By {course.teacherName}</p>
+                                            <h3>
+                                                {course.title}
+                                                <span className={styles.statusMini} data-status={course.status}>
+                                                    {course.status === 'generating' ? '🧪' : course.status === 'published' ? '🟢' : '🕒'}
+                                                </span>
+                                            </h3>
+                                            <p>By {course.teacherName} | Status: {course.status?.toUpperCase() || 'UNKNOWN'}</p>
                                         </div>
                                         <div className={styles.approvalActions}>
-                                            <button className="btn-success small" onClick={() => handleApprove(course.id, 'approve')}>Approve</button>
-                                            <button className="btn-danger small" onClick={() => handleApprove(course.id, 'reject')}>Reject</button>
+                                            {course.status === 'pending_approval' && (
+                                                <>
+                                                    <button className="btn-success small" onClick={() => handleApprove(course.id, 'approve')}>Approve</button>
+                                                    <button className="btn-danger small" onClick={() => handleApprove(course.id, 'reject')}>Reject</button>
+                                                </>
+                                            )}
+                                            <button className={`${styles.deleteBtn || 'btn-danger'} small`} onClick={() => handleDelete(course.id)} title="Purge Course">🗑️</button>
                                         </div>
                                     </div>
                                 ))}

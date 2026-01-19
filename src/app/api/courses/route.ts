@@ -49,11 +49,16 @@ export async function POST(req: NextRequest) {
             modules: data.modules,
             college_id: user.collegeId || null,
             teacher_id: user.id,
-            status: 'published'
+            status: 'generating'
         });
 
         // Trigger AI Course Generation Lab
-        const generatorUrl = process.env.GENERATOR_LAB_URL || 'http://localhost:8000';
+        const generatorUrl = process.env.GENERATOR_LAB_URL || 'http://localhost:10000';
+
+        // Construct callback URL for status update
+        const protocol = req.headers.get('x-forwarded-proto') || 'http';
+        const host = req.headers.get('host');
+        const callbackUrl = `${protocol}://${host}/api/courses/${course.id}/complete`;
 
         try {
             fetch(`${generatorUrl}/generate`, {
@@ -63,10 +68,12 @@ export async function POST(req: NextRequest) {
                     course_id: course.id,
                     title: course.title,
                     description: course.description,
-                    modules_count: data.modules_count || 5, // Use schema value if exists
-                    mcqs_per_module: 10
+                    modules_count: data.modules_count || 5,
+                    mcqs_per_module: 10,
+                    callback_url: callbackUrl
                 })
             }).catch(e => console.error("Generator Lab Trigger Failed:", e));
+            console.log(`[*] Triggered AI Lab at ${generatorUrl} for course ${course.id}`);
         } catch (e) {
             console.error("Generator Linkage Failed:", e);
         }

@@ -279,6 +279,19 @@ export const dbClient = {
         return data;
     },
 
+    async deleteCourse(id: string) {
+        if (USE_MOCK) {
+            const index = db.courses.findIndex(c => c.id === id);
+            if (index === -1) return;
+            db.courses.splice(index, 1);
+            saveDb();
+            return;
+        }
+        if (!supabaseAdmin) throw new Error('Supabase not configured');
+        const { error } = await supabaseAdmin.from('courses').delete().eq('id', id);
+        if (error) throw error;
+    },
+
     // === ENROLLMENTS ===
     async getEnrollments(filters: { user_id?: string, course_id?: string } = {}) {
         if (USE_MOCK) {

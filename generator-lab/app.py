@@ -127,7 +127,8 @@ class CourseRequest(BaseModel):
     target_level: str = "Beginner"
     modules_count: int = 5
     labs_per_module: int = 1
-    mcqs_per_module: int = 70
+    mcqs_per_module: int = 5 # Reduced for performance/cost during test
+    callback_url: str | None = None
 
 @app.get("/health")
 async def health():
@@ -370,6 +371,21 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
         # --- PHASE 5: KNOWLEDGE GRAPH ---
         print(f"[*] Phase 5: Building Knowledge Graph in Neo4j...", flush=True)
         await build_knowledge_graph(course_id, full_course)
+
+        # --- PHASE 6: CALLBACK ---
+        if request.callback_url:
+            print(f"[*] Phase 6: Sending completion callback to {request.callback_url}...", flush=True)
+            try:
+                import requests
+                callback_data = {
+                    "course_id": course_id,
+                    "status": "pending_approval",
+                    "modules_count": len(full_course.get("modules", []))
+                }
+                requests.post(request.callback_url, json=callback_data, timeout=10)
+                print(f"[+] Callback delivered successfully.", flush=True)
+            except Exception as e:
+                print(f"[!] Callback failed: {str(e)}", flush=True)
 
     except Exception as e:
         print(f"[EX] Pipeline CRITICAL failure for {course_id}: {str(e)}", flush=True)
