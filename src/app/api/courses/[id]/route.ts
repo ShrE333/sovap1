@@ -22,6 +22,7 @@ export async function DELETE(
         const course = allCourses.find((c: any) => c.id === id);
 
         if (!course) {
+            console.warn(`[API] Delete failed: Course ${id} not found.`);
             return NextResponse.json({ error: 'Course not found' }, { status: 404 });
         }
 
@@ -31,7 +32,11 @@ export async function DELETE(
         const isOwner = (role === 'teacher' || role === 'college') && course.teacher_id === user.id;
 
         if (!isAdmin && !isCollegeAdmin && !isOwner) {
-            return NextResponse.json({ error: 'Forbidden: Insufficient privileges to purge this unit' }, { status: 403 });
+            let reason = "Insufficient privileges to purge this unit.";
+            if (role === 'teacher' && !isOwner) reason = "You can only delete content you created.";
+            if (role === 'college' && !isCollegeAdmin && !isOwner) reason = "This unit belongs to a different institution.";
+
+            return NextResponse.json({ error: `Forbidden: ${reason}` }, { status: 403 });
         }
 
         await dbClient.deleteCourse(id);

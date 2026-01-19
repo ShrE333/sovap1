@@ -224,40 +224,68 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
             m_title = module.get("title", f"Module {i+1}")
             print(f"[*] Expanding Module {i+1}: {m_title}...", flush=True)
             module_prompt = f"""
-            You are a subject matter expert. Write an elite, high-quality intelligence unit for the module: {m_title}.
+            You are a Lead Technical Instructor. Write an elite, high-quality intelligence unit for the module: {m_title}.
             Topics: {module.get('subtopics', [])}. 
             Overall Course Context: {ctx}.
 
             Instructions:
-            1. **Theory**: Provide approx 1200-1500 words of rich, academic theory. Use Markdown (### headers, **bolding**, `inline code`). Break it down into 'Concept', 'Architecture', 'Security Implications', and 'Industry Implementation'.
-            2. **Code Lab**: Provide a detailed, step-by-step hands-on laboratory exercise.
-            3. **Assessment**: Create exactly {request.mcqs_per_module} varied MCQs.
+            1. **Theory**: Provide approx 800-1000 words of rich intelligence. Use Markdown (### headers, **bolding**). 
+               Break it down into: 'Concept', 'Architecture', 'Security Implications', and 'Industry Implementation'.
+            2. **Code Lab**: Provide a step-by-step hands-on laboratory exercise. 
+            3. **Assessment**: Create exactly {request.mcqs_per_module} MCQs.
 
-            Return a JSON object with this exact structure:
+            CORE REQUIREMENT: You MUST return a JSON object. All long text fields must be valid JSON strings (properly escaped). 
+            Do NOT include any text outside the JSON object.
+
+            JSON Structure:
             {{
               "title": "{m_title}",
-              "theory": "Markdown formatted theory content...",
-              "code_lab": "Markdown formatted lab guide...",
-              "prerequisites": ["List of concept names"],
+              "theory": "Markdown content here...",
+              "code_lab": "Markdown content here...",
+              "prerequisites": ["concept1", "concept2"],
               "mcqs": [
                 {{
                   "question": "Question text",
                   "options": ["A", "B", "C", "D"],
                   "correctIndex": 0,
-                  "difficulty": "basic|intermediate|advanced",
-                  "explanation": "Why correct"
+                  "difficulty": "basic",
+                  "explanation": "Why it is correct"
                 }}
               ]
             }}
             """
             
+            # Use a more robust approach for long JSON content
+            # We don't use response_format="json_object" here because it's too fragile for 1000+ word outputs on Groq/Llama
             chunk_resp = await client.chat.completions.create(
-                messages=[{"role": "user", "content": module_prompt}],
+                messages=[
+                    {"role": "system", "content": "You are a technical educator. Respond ONLY with a valid JSON object. No preamble."},
+                    {"role": "user", "content": module_prompt}
+                ],
                 model="llama-3.3-70b-versatile",
-                response_format={"type": "json_object"},
-                max_tokens=4096 # Maximize output for deep dive
+                max_tokens=3500
             )
-            module_expanded = json.loads(chunk_resp.choices[0].message.content)
+            
+            raw_content = chunk_resp.choices[0].message.content
+            try:
+                # Find start and end of JSON in case of preamble
+                start = raw_content.find('{')
+                end = raw_content.rfind('}') + 1
+                if start != -1 and end != 0:
+                    module_expanded = json.loads(raw_content[start:end])
+                else:
+                    module_expanded = json.loads(raw_content)
+            except Exception as parse_err:
+                print(f"[!] JSON Parse error for module {m_title}: {str(parse_err)}", flush=True)
+                # Fallback: attempt to fix common issues or create a minimal valid module
+                module_expanded = {
+                    "title": m_title,
+                    "theory": raw_content[:2000] + "...", 
+                    "code_lab": "Review full logs for generation error.",
+                    "prerequisites": [],
+                    "mcqs": []
+                }
+            
             full_course["modules"].append(module_expanded)
             
             # Memory Cleanup: Free up string memory after each step
