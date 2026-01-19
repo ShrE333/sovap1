@@ -21,9 +21,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
 
     useEffect(() => {
-        // Load from localStorage
-        const savedToken = localStorage.getItem('sovap_token');
-        const savedUser = localStorage.getItem('sovap_user');
+        // Load from sessionStorage for tab isolation
+        const savedToken = sessionStorage.getItem('sovap_token');
+        const savedUser = sessionStorage.getItem('sovap_user');
 
         if (savedToken && savedUser) {
             setToken(savedToken);
@@ -50,8 +50,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setToken(data.token);
             setUser(data.user);
 
-            localStorage.setItem('sovap_token', data.token);
-            localStorage.setItem('sovap_user', JSON.stringify(data.user));
+            sessionStorage.setItem('sovap_token', data.token);
+            sessionStorage.setItem('sovap_user', JSON.stringify(data.user));
 
             // Role-based routing
             switch (data.user.role) {
@@ -76,8 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const logout = () => {
         setUser(null);
         setToken(null);
-        localStorage.removeItem('sovap_token');
-        localStorage.removeItem('sovap_user');
+        sessionStorage.removeItem('sovap_token');
+        sessionStorage.removeItem('sovap_user');
         router.push('/');
     };
 
@@ -101,7 +101,7 @@ export async function apiCall(
     endpoint: string,
     options: RequestInit = {}
 ): Promise<Response> {
-    const token = localStorage.getItem('sovap_token');
+    const token = typeof window !== 'undefined' ? sessionStorage.getItem('sovap_token') : null;
 
     const headers: Record<string, string> = {
         ...(token && { Authorization: `Bearer ${token}` }),
@@ -120,9 +120,11 @@ export async function apiCall(
 
     if (response.status === 401) {
         // Token expired or invalid
-        localStorage.removeItem('sovap_token');
-        localStorage.removeItem('sovap_user');
-        window.location.href = '/login';
+        if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('sovap_token');
+            sessionStorage.removeItem('sovap_user');
+            window.location.href = '/login';
+        }
     }
 
     return response;
