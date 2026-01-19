@@ -7,7 +7,7 @@ import { dbClient } from '@/lib/db-client';
 const createCourseSchema = z.object({
     title: z.string().min(3),
     description: z.string().optional(),
-    modules: z.array(z.any()),
+    modules: z.array(z.any()).optional().default([]), // Make optional for AI generation
     estimatedHours: z.number().optional(),
     modules_count: z.number().optional(),
 });
@@ -15,7 +15,17 @@ const createCourseSchema = z.object({
 export async function POST(req: NextRequest) {
     try {
         const user = await verifyAuth(req);
-        if (!user || (user.role !== 'teacher' && user.role !== 'college' && user.role !== 'admin')) {
+
+        if (!user) {
+            console.error("[API/Courses] No user found in verifyAuth");
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const role = user.role?.toLowerCase();
+        const allowedRoles = ['teacher', 'college', 'admin'];
+
+        if (!allowedRoles.includes(role)) {
+            console.error(`[API/Courses] Forbidden: Role '${user.role}' not in ${allowedRoles}`);
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
