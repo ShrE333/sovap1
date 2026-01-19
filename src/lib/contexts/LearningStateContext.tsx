@@ -33,14 +33,16 @@ export function LearningStateProvider({ children }: { children: React.ReactNode 
             if (courseId === 'owasp-top-10' || courseId === 'OWASP-TOP-10') {
                 course = owaspCourse;
             } else {
-                // 2. Try to fetch from GitHub
+                // 2. Fetch from Internal Proxy (handles Private GitHub Repos)
                 try {
-                    const response = await fetch(`${GITHUB_STORAGE_BASE}/courses/${courseId}/master.json`);
+                    const response = await fetch(`/api/courses/${courseId}/content`);
                     if (response.ok) {
                         course = await response.json();
+                    } else {
+                        console.error("Course fetch failed:", response.status, response.statusText);
                     }
                 } catch (e) {
-                    console.error("Failed to fetch course from GitHub:", e);
+                    console.error("Failed to fetch course api:", e);
                 }
             }
 

@@ -453,32 +453,45 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
             print(f"[GH-ERROR] Storage phase failed for {course_id}: {str(e)}", flush=True)
 
         # --- PHASE 4: VECTOR CHUNKING ---
-        print(f"[*] Phase 4: Chunking and Vectorizing Concept Units...", flush=True)
-        await vectorize_course(course_id, full_course)
+        try:
+            print(f"[*] Phase 4: Chunking and Vectorizing Concept Units...", flush=True)
+            await vectorize_course(course_id, full_course)
+        except Exception as ve:
+            print(f"[!] Phase 4 (Vectorization) Failed: {str(ve)}", flush=True)
+            print("[*] Continuing pipeline to ensure course delivery...", flush=True)
 
         # --- PHASE 5: KNOWLEDGE GRAPH ---
-        print(f"[*] Phase 5: Building Knowledge Graph in Neo4j...", flush=True)
-        await build_knowledge_graph(course_id, full_course)
+        try:
+            print(f"[*] Phase 5: Building Knowledge Graph in Neo4j...", flush=True)
+            await build_knowledge_graph(course_id, full_course)
+        except Exception as nge:
+            print(f"[!] Phase 5 (Knowledge Graph) Failed: {str(nge)}", flush=True)
+            print("[*] Continuing pipeline...", flush=True)
 
-        # --- PHASE 6: CALLBACK ---
+    except Exception as e:
+        print(f"[EX] Pipeline CRITICAL failure for {course_id}: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        
+    finally:
+        # --- PHASE 6: CALLBACK (Guaranteed) ---
         if request.callback_url:
             print(f"[*] Phase 6: Sending completion callback to {request.callback_url}...", flush=True)
             try:
                 import requests
+                # If we have a full course with modules, marks it as pending approval
+                # If critical failure occurred early, we might want to flag it, but for now allow approval of what exists
+                is_valid = len(full_course.get("modules", [])) > 0
+                
                 callback_data = {
                     "course_id": course_id,
-                    "status": "pending_approval",
+                    "status": "pending_approval" if is_valid else "rejected",
                     "modules_count": len(full_course.get("modules", []))
                 }
                 requests.post(request.callback_url, json=callback_data, timeout=10)
                 print(f"[+] Callback delivered successfully.", flush=True)
             except Exception as e:
                 print(f"[!] Callback failed: {str(e)}", flush=True)
-
-    except Exception as e:
-        print(f"[EX] Pipeline CRITICAL failure for {course_id}: {str(e)}", flush=True)
-        import traceback
-        traceback.print_exc()
 
 class CourseQA:
     def __init__(self, course_id: str):
