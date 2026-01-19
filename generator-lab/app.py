@@ -130,6 +130,10 @@ class CourseRequest(BaseModel):
     mcqs_per_module: int = 5 # Reduced for performance/cost during test
     callback_url: str | None = None
 
+@app.get("/")
+async def root():
+    return {"status": "AI Course Generator Lab is ACTIVE", "version": "2.0.0"}
+
 @app.get("/health")
 async def health():
     groq_available = client is not None
@@ -140,7 +144,7 @@ async def health():
     try:
         from github import Github
         gh_token = os.getenv("GITHUB_TOKEN")
-        gh_repo = os.getenv("GITHUB_REPO")
+        gh_repo = os.getenv("GITHUB_REPO", "ShrE333/sovap1")
         if gh_token and gh_repo:
             g = Github(gh_token)
             r = g.get_repo(gh_repo)
@@ -154,8 +158,8 @@ async def health():
         "qdrant": qdrant_available,
         "neo4j": neo4j_available,
         "github": github_ok,
-        "github_repo": os.getenv("GITHUB_REPO", "NOT_SET"),
-        "port": os.getenv("PORT", "8000")
+        "github_repo": os.getenv("GITHUB_REPO", "ShrE333/sovap1"),
+        "port": os.getenv("PORT", "10000")
     }
 
 @app.post("/generate")
@@ -300,12 +304,36 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
             # 2. Upload to GitHub
             from github import Github, GithubException
             gh_token = os.getenv("GITHUB_TOKEN")
-            gh_repo_name = os.getenv("GITHUB_REPO")
+            gh_repo_name = os.getenv("GITHUB_REPO", "ShrE333/sovap1") # Safer default
             gh_branch = os.getenv("GITHUB_BRANCH", "main")
             
+            print(f"[*] Attempting GitHub commit to {gh_repo_name} on branch {gh_branch}...", flush=True)
+
             if gh_token and gh_repo_name:
                 g = Github(gh_token)
-                repo = g.get_repo(gh_repo_name)
+                repo = None
+                try:
+                    repo = g.get_repo(gh_repo_name)
+                    print(f"[+] Connected to repo: {gh_repo_name}", flush=True)
+                except Exception as e:
+                    print(f"[!] FAILED to get repo {gh_repo_name}: {str(e)}", flush=True)
+                    # Try fallback 1: append username if missing
+                    if "/" not in gh_repo_name:
+                        try:
+                            fallback_repo = f"ShrE333/{gh_repo_name}"
+                            print(f"[*] Trying fallback 1: {fallback_repo}", flush=True)
+                            repo = g.get_repo(fallback_repo)
+                        except: pass
+                    
+                    # Try fallback 2: use the primary project repo confirmed in logs
+                    if not repo:
+                        try:
+                            primary_repo = "ShrE333/sovap1"
+                            print(f"[*] Trying fallback 2 (Primary): {primary_repo}", flush=True)
+                            repo = g.get_repo(primary_repo)
+                        except Exception as final_e:
+                            print(f"[!!] ALL GITHUB FALLBACKS FAILED: {str(final_e)}", flush=True)
+                            raise final_e
                 
                 # Helper to update or create
                 def push_to_gh(path, message, content):

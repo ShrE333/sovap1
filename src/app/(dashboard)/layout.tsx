@@ -4,11 +4,13 @@ import styles from './dashboard.module.css';
 import Link from 'next/link';
 import ClientWrapper from './ClientWrapper';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 function Sidebar() {
-    const { user, logout } = useAuth();
+    const { user, logout, isLoading } = useAuth();
     const pathname = usePathname();
+    const router = useRouter();
 
     const studentLinks = [
         { name: 'Dashboard', href: '/student', icon: '🏠' },
@@ -45,6 +47,33 @@ function Sidebar() {
     const dashboardHref = user?.role === 'admin' ? '/admin' :
         user?.role === 'college' ? '/college' :
             user?.role === 'teacher' ? '/teacher' : '/student';
+
+    // SECURITY: Prevents "User Switching" or unauthorized access via direct URL hit
+    useEffect(() => {
+        if (!user && !isLoading) {
+            router.push('/');
+            return;
+        }
+
+        if (user) {
+            const currentPath = pathname;
+            const role = user.role;
+
+            // Check if current path matches role
+            const isAllowed =
+                (role === 'admin' && currentPath.startsWith('/admin')) ||
+                (role === 'college' && currentPath.startsWith('/college')) ||
+                (role === 'teacher' && currentPath.startsWith('/teacher')) ||
+                (role === 'student' && currentPath.startsWith('/student'));
+
+            if (!isAllowed && !isLoading) {
+                console.warn(`[Security] Redirecting ${role} from unauthorized path: ${currentPath}`);
+                router.replace(dashboardHref);
+            }
+        }
+    }, [user, pathname, isLoading, router, dashboardHref]);
+
+    if (isLoading) return <div className={styles.sidebar}>Loading...</div>;
 
     return (
         <aside className={`${styles.sidebar} glass`}>
