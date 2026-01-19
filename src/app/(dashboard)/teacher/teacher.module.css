@@ -167,18 +167,36 @@
 }
 
 .statusLive {
-    background: rgba(16, 185, 129, 0.1);
-    color: #10b981;
+    background: #E6FFFA;
+    color: #2C7A7B;
+    border: 1px solid #B2F5EA;
 }
 
 .statusPending {
-    background: rgba(245, 158, 11, 0.1);
-    color: #f59e0b;
+    background: #FFFBEB;
+    color: #D69E2E;
+    border: 1px solid #FEFCBF;
 }
 
 .statusGenerating {
-    background: rgba(139, 92, 246, 0.1);
-    color: #8b5cf6;
+    background: #EBF8FF;
+    color: #4299E1;
+    border: 1px solid #BEE3F8;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+
+    100% {
+        opacity: 1;
+    }
 }
 
 .courseTitle {
@@ -266,13 +284,15 @@
 .confidenceValue {
     font-size: 0.9rem;
     font-weight: 600;
-    color: var(--accent-primary);
+    color: var(--brand-teal);
 }
 
 .confidenceLabel {
     font-size: 0.6rem;
     color: var(--text-muted);
     text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.05em;
 }
 
 /* Modal System (Pure Minimal) */
@@ -343,20 +363,20 @@
 .modalForm input,
 .modalForm textarea {
     width: 100%;
-    background: var(--bg-primary);
-    border: 1px solid var(--glass-border);
+    background: var(--bg-surface);
+    border: 2px solid var(--border-color);
     border-radius: var(--radius-sm);
     padding: 0.75rem;
-    color: white;
-    font-family: inherit;
+    color: var(--brand-navy);
+    font-family: 'DM Sans', sans-serif;
     transition: var(--transition);
 }
 
 .modalForm input:focus,
 .modalForm textarea:focus {
     outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
+    border-color: var(--brand-teal);
+    box-shadow: 0 0 0 3px rgba(61, 141, 149, 0.1);
 }
 
 .modalFooter {
