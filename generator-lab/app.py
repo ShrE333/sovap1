@@ -178,7 +178,7 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
         
         syllabus_resp = await client.chat.completions.create(
             messages=[{"role": "user", "content": syllabus_prompt}],
-            model="llama3-70b-8192",
+            model="llama-3.3-70b-versatile",
             response_format={"type": "json_object"}
         )
         syllabus = json.loads(syllabus_resp.choices[0].message.content)
@@ -193,7 +193,7 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
             
             chunk_resp = await client.chat.completions.create(
                 messages=[{"role": "user", "content": module_prompt}],
-                model="llama3-70b-8192",
+                model="llama-3.3-70b-versatile",
                 response_format={"type": "json_object"}
             )
             module_expanded = json.loads(chunk_resp.choices[0].message.content)
@@ -235,7 +235,7 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
                 pdf.multi_cell(0, 7, txt=safe_text)
                 
             pdf.output(pdf_path)
-            logger.info(f"Local PDF generated at {pdf_path}")
+            print(f"[*] Local PDF generated at {pdf_path}", flush=True)
 
             # 2. Upload to GitHub
             from github import Github, GithubException
@@ -261,7 +261,7 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
                                 sha=sha,
                                 branch=gh_branch
                             )
-                            logger.info(f"GitHub Updated: {path}")
+                            print(f"[*] GitHub Updated: {path}", flush=True)
                         except GithubException as e:
                             if e.status == 404:
                                 repo.create_file(
@@ -270,14 +270,14 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
                                     content=content,
                                     branch=gh_branch
                                 )
-                                logger.info(f"GitHub Created: {path}")
+                                print(f"[*] GitHub Created: {path}", flush=True)
                             else:
                                 raise
                     except Exception as ge:
-                        logger.error(f"Failed to push {path} to GitHub: {str(ge)}")
+                        print(f"[!] Failed to push {path} to GitHub: {str(ge)}", flush=True)
 
                 # Save JSON
-                logger.info(f"Pushing master.json for {course_id}...")
+                print(f"[*] Pushing master.json for {course_id}...", flush=True)
                 push_to_gh(
                     f"courses/{course_id}/master.json",
                     f"master JSON for {course_id}",
@@ -288,7 +288,7 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
                 with open(pdf_path, "rb") as f:
                     pdf_content = f.read()
                 
-                logger.info(f"Pushing source.pdf for {course_id}...")
+                print(f"[*] Pushing source.pdf for {course_id}...", flush=True)
                 push_to_gh(
                     f"courses/{course_id}/source.pdf",
                     f"course PDF for {course_id}",
@@ -337,7 +337,7 @@ class CourseQA:
         
         chat_completion = await client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
-            model="llama3-70b-8192",
+            model="llama-3.3-70b-versatile",
             response_format={"type": "json_object"}
         )
         
