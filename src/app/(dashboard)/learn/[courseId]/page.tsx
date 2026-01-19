@@ -48,6 +48,25 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
     }, [showQuiz, currentTopic, currentCourse]);
 
     if (isLoading || !state) return <div className="loader">Initializing Cognitive Engine for {courseId}...</div>;
+
+    // Check if course has modules, if not, it's an empty/incomplete course
+    if (!currentCourse?.modules || currentCourse.modules.length === 0) {
+        return (
+            <div className={styles.mainLayout} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+                <div className={`${styles.glassCard}`} style={{ padding: '2rem', textAlign: 'center' }}>
+                    <h2>⚠️ No Content Available</h2>
+                    <p style={{ color: 'var(--text-muted)', marginTop: '1rem' }}>
+                        This intelligence unit is currently empty.
+                        <br />It may have failed generation or is pending content injection.
+                    </p>
+                    <button className="btn-secondary" onClick={() => window.history.back()} style={{ marginTop: '2rem' }}>
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     if (!currentTopic) return <div className="completed">Course Completed! 🎉</div>;
 
     const handleQuizComplete = (score: number, avgConfidence: number) => {

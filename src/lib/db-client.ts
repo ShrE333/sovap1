@@ -356,5 +356,14 @@ export const dbClient = {
             ...data,
             user_id: data.student_id
         };
+    },
+
+    async enrollStudent(userId: string, courseId: string) {
+        // Wrapper for createEnrollment to handle duplicate checks if needed
+        const existing = await this.getEnrollments({ user_id: userId, course_id: courseId });
+        if (existing.length > 0) {
+            return existing[0]; // Already enrolled
+        }
+        return await this.createEnrollment({ user_id: userId, course_id: courseId });
     }
 };
