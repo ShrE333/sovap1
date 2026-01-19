@@ -364,7 +364,8 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
             # 2. Upload to GitHub
             from github import Github, GithubException
             gh_token = os.getenv("GITHUB_TOKEN")
-            gh_repo_name = os.getenv("GITHUB_REPO", "ShrE333/sovap1") # Safer default
+            # Force correct repo based on user request
+            gh_repo_name = "ShrE333/sovap-course-storage" 
             gh_branch = os.getenv("GITHUB_BRANCH", "main")
             
             print(f"[*] Attempting GitHub commit to {gh_repo_name} on branch {gh_branch}...", flush=True)

@@ -14,26 +14,30 @@ export async function GET(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Try to fetch from GitHub (Private/Public) using Token
+        // Try primary storage first, then fallback to project repo
         const token = process.env.GITHUB_TOKEN;
-        const repo = process.env.GITHUB_REPO || 'ShrE333/sovap1';
         const branch = process.env.GITHUB_BRANCH || 'main'; // Default branch
+        const reposToCheck = ['ShrE333/sovap-course-storage', 'ShrE333/sovap1'];
+        let data = null;
 
-        // Construct GitHub API URL for contents
-        // Note: Using raw.githubusercontent with header is better for content
-        // Or API: https://api.github.com/repos/{owner}/{repo}/contents/{path}
+        for (const targetRepo of reposToCheck) {
+            try {
+                const rawUrl = `https://raw.githubusercontent.com/${targetRepo}/${branch}/courses/${id}/master.json`;
+                console.log(`[Proxy] Checking ${rawUrl}`);
+                const ghRes = await fetch(rawUrl, {
+                    headers: token ? { 'Authorization': `token ${token}` } : {}
+                });
 
-        // Let's try raw URL with Authorization header
-        const rawUrl = `https://raw.githubusercontent.com/${repo}/${branch}/courses/${id}/master.json`;
+                if (ghRes.ok) {
+                    data = await ghRes.json();
+                    break; // Found it!
+                }
+            } catch (e) {
+                console.warn(`[Proxy] Failed to check ${targetRepo}`, e);
+            }
+        }
 
-        const ghRes = await fetch(rawUrl, {
-            headers: token ? {
-                'Authorization': `token ${token}`
-            } : {}
-        });
-
-        if (ghRes.ok) {
-            const data = await ghRes.json();
+        if (data) {
             return NextResponse.json(data);
         }
 
