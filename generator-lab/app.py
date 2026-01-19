@@ -379,11 +379,15 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
                     print(f"[!] FAILED to get repo {gh_repo_name}: {str(e)}", flush=True)
                     # Try fallback 1: append username if missing
                     if "/" not in gh_repo_name:
-                        try:
                             fallback_repo = f"ShrE333/{gh_repo_name}"
                             print(f"[*] Trying fallback 1: {fallback_repo}", flush=True)
                             repo = g.get_repo(fallback_repo)
-                        except: pass
+                        except: 
+                            # Try the specific storage repo the user mentioned
+                            try:
+                                print(f"[*] Trying specific storage repo: ShrE333/sovap-course-storage", flush=True)
+                                repo = g.get_repo("ShrE333/sovap-course-storage")
+                            except: pass
                     
                     # Try fallback 2: use the primary project repo confirmed in logs
                     if not repo:
@@ -485,7 +489,7 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
                 
                 callback_data = {
                     "course_id": course_id,
-                    "status": "pending_approval" if is_valid else "rejected",
+                    "status": "published" if is_valid else "rejected", # Auto-publish (No Approval)
                     "modules_count": len(full_course.get("modules", []))
                 }
                 requests.post(request.callback_url, json=callback_data, timeout=10)

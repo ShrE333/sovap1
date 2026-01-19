@@ -138,7 +138,7 @@ export default function TeacherPage() {
             });
 
             if (response.ok) {
-                alert('✨ MAGIC SUCCESS! Course generation started. It will appear on your dashboard as "Generating" and then "Pending Approval".');
+                alert('✨ MAGIC SUCCESS! Course generation started. It will appear on your dashboard as "Generating" and then "Live" automatically.');
                 setShowCreateCourse(false);
                 setNewCourse({ title: '', description: '', estimatedHours: 10 });
                 loadDashboard();
@@ -267,7 +267,7 @@ export default function TeacherPage() {
                                             {course.status === 'published' ? (
                                                 <><strong>{course.studentCount}</strong> Students Enrolled</>
                                             ) : (
-                                                <em style={{ color: 'var(--text-muted)' }}>{course.status === 'generating' ? 'AI Agent busy...' : 'Awaiting Faculty Audit'}</em>
+                                                <em style={{ color: 'var(--text-muted)' }}>{course.status === 'generating' ? 'AI Agent busy...' : 'Finalizing...'}</em>
                                             )}
                                         </span>
                                         <div className={styles.cardActions}>

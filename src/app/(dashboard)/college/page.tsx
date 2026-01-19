@@ -151,8 +151,8 @@ export default function CollegeDashboard() {
                     <div className={styles.statValue}>{teachers.length}</div>
                 </div>
                 <div className={`${styles.statCard} animate-slide-up`} style={{ animationDelay: '0.3s' }}>
-                    <div className={styles.statLabel}>Pending Logic</div>
-                    <div className={styles.statValue}>{pendingCourses.length}</div>
+                    <div className={styles.statLabel}>Generating Logic</div>
+                    <div className={styles.statValue}>{pendingCourses.filter(c => c.status === 'generating').length}</div>
                 </div>
                 <div className={`${styles.statCard} animate-slide-up`} style={{ animationDelay: '0.4s' }}>
                     <div className={styles.statLabel}>Active Students</div>
@@ -196,44 +196,6 @@ export default function CollegeDashboard() {
                     </div>
                 </section>
 
-                {/* Cognitive Logic Approvals */}
-                <section className={styles.panelSection}>
-                    <div className={styles.panelHeader}>
-                        <h2>Course Logic Approvals</h2>
-                        <span className={styles.countBadge}>{pendingCourses.length} Pending</span>
-                    </div>
-
-                    <div className={`${styles.panelBody} glass`}>
-                        {pendingCourses.length === 0 ? (
-                            <div className={styles.emptyInternal}>All cognitive units are up-to-date.</div>
-                        ) : (
-                            <div className={styles.list}>
-                                {pendingCourses.map((course, idx) => (
-                                    <div key={course.id} className={styles.approvalItem} style={{ animationDelay: `${idx * 0.05}s` }}>
-                                        <div className={styles.courseHeader}>
-                                            <h3>
-                                                {course.title}
-                                                <span className={styles.statusMini} data-status={course.status}>
-                                                    {course.status === 'generating' ? '🧪' : course.status === 'published' ? '🟢' : '🕒'}
-                                                </span>
-                                            </h3>
-                                            <p>By {course.teacherName} | Status: {course.status?.toUpperCase() || 'UNKNOWN'}</p>
-                                        </div>
-                                        <div className={styles.approvalActions}>
-                                            {course.status === 'pending_approval' && (
-                                                <>
-                                                    <button className="btn-success small" onClick={() => handleApprove(course.id, 'approve')}>Approve</button>
-                                                    <button className="btn-danger small" onClick={() => handleApprove(course.id, 'reject')}>Reject</button>
-                                                </>
-                                            )}
-                                            <button className={`${styles.deleteBtn || 'btn-danger'} small`} onClick={() => handleDelete(course.id)} title="Purge Course">🗑️</button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </section>
             </div>
 
             {/* Modal */}
