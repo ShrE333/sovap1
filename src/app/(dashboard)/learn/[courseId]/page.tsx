@@ -67,7 +67,28 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
         );
     }
 
-    if (!currentTopic) return <div className="completed">Course Completed! 🎉</div>;
+    if (!currentTopic) {
+        return (
+            <div className="completed" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '1rem' }}>
+                <h1>🎉 Course Completed!</h1>
+                <p>You have mastered all available topics.</p>
+                <button
+                    className="btn-primary"
+                    onClick={() => {
+                        if (confirm('Reset all progress for this course?')) {
+                            localStorage.removeItem(`sovap_state_${courseId}`);
+                            window.location.reload();
+                        }
+                    }}
+                >
+                    Reset Progress & Restart
+                </button>
+                <button className="btn-secondary" onClick={() => window.location.href = '/student'}>
+                    Back to Dashboard
+                </button>
+            </div>
+        );
+    }
 
     const handleQuizComplete = (score: number, avgConfidence: number) => {
         // Normalize 1-5 confidence to 0-1 for the engine
