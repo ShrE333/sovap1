@@ -97,10 +97,11 @@ export async function GET(req: NextRequest) {
         if (status) filters.status = status;
 
         if (!user) {
+            // Public users: only truly published courses
             filters.status = 'published';
         } else if (user.role === 'student') {
-            filters.status = 'published';
-            // Student visibility is handled by dynamic logic below, no college_id filter here
+            // Students: Don't filter by status in DB query - we'll show both published and pending_approval
+            // This is intentional blank - no status filter for students
         } else if (user.role === 'teacher' || user.role === 'college') {
             filters.college_id = user.collegeId;
         }
@@ -109,15 +110,11 @@ export async function GET(req: NextRequest) {
 
         // Apply dynamic visibility logic
         if (user && user.role === 'student') {
-            // For now, allow students to see ALL published courses to ensure they appear in the catalog
-            // In a real multi-tenant app, we would restrict by college_id match
-            const enrollmentsRes = await dbClient.getEnrollments({ user_id: user.id });
-            const enrolledIds = new Set(enrollmentsRes.map((e: any) => e.course_id));
-
-            // Keep filtering simple: Show all 'published' or 'pending_approval' (which we treat as live now)
-            // And merge with enrolled courses just in case
-            // Note: The main query already filtered by status='published' if we passed that param
-            // But if we want a global catalog, we might want to ensure we don't hide teacher courses
+            // Students see courses that are either 'published' or 'pending_approval' (LIVE)
+            // Hide 'generating' and 'rejected' courses
+            courses = courses.filter((c: any) =>
+                c.status === 'published' || c.status === 'pending_approval'
+            );
         }
 
         return NextResponse.json({ courses });
