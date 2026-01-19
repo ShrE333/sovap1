@@ -175,18 +175,21 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
         print(f"[*] Phase 1.1: Generating high-level Syllabus for {request.title}...", flush=True)
         ctx = request.description if request.description and len(request.description) > 5 else f"A comprehensive course on {request.title}"
         syllabus_prompt = f"""
-        Create a detailed syllabus for '{request.title}'. 
+        You are an Lead Technical Instructor at a Top University. 
+        Create a world-class, deep-dive syllabus for '{request.title}'. 
         Context: {ctx}. 
+        The course must be rigorous, logical, and progress from fundamentals to advanced professional mastery.
+        
         Return a JSON object with the following structure:
         {{
           "modules": [
             {{
-              "title": "Module Title",
-              "subtopics": ["topic1", "topic2", "topic3"]
+              "title": "A compelling, academic module name",
+              "subtopics": ["Subtopic 1: Fundamental concepts", "Subtopic 2: Advanced applications", "Subtopic 3: Professional best practices"]
             }}
           ]
         }}
-        Generate exactly {request.modules_count} modules.
+        Generate exactly {request.modules_count} distinct and non-overlapping modules.
         """
         
         syllabus_resp = await client.chat.completions.create(
@@ -205,20 +208,27 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
             m_title = module.get("title", f"Module {i+1}")
             print(f"[*] Expanding Module {i+1}: {m_title}...", flush=True)
             module_prompt = f"""
-            Write deep educational theory, a code lab, and exactly {request.mcqs_per_module} MCQs for the module: {m_title}. 
+            You are a subject matter expert. Write a comprehensive, high-quality intelligence unit for the module: {m_title}.
             Topics: {module.get('subtopics', [])}. 
-            Overall Context: {ctx}.
-            Return a JSON object with this structure:
+            Overall Course Context: {ctx}.
+
+            Instructions:
+            1. **Theory**: Provide at least 2000 words of rich, academic theory. Use Markdown (### headers, **bolding**, `inline code`). Break it down into 'Concept', 'Architecture', 'Security Implications', and 'Industry Implementation'.
+            2. **Code Lab**: Provide a detailed, step-by-step hands-on laboratory exercise. Include setup, execution, and verification steps.
+            3. **Assessment**: Create exactly {request.mcqs_per_module} varied MCQs. Ensure distractors are plausible and the difficulty ranges from 'basic' to 'specialized'.
+
+            Return a JSON object with this exact structure:
             {{
               "title": "{m_title}",
-              "theory": "Extended theory content...",
-              "code_lab": "Step-by-step coding exercise...",
+              "theory": "Markdown formatted deep theory content...",
+              "code_lab": "Detailed Markdown formatted lab guide...",
               "mcqs": [
                 {{
-                  "question": "question text",
-                  "options": ["opt1", "opt2", "opt3", "opt4"],
+                  "question": "Deep conceptual question",
+                  "options": ["A", "B", "C", "D"],
                   "correctIndex": 0,
-                  "difficulty": "basic|intermediate|advanced"
+                  "difficulty": "basic|intermediate|advanced",
+                  "explanation": "Why this is correct."
                 }}
               ]
             }}
