@@ -8,9 +8,25 @@
 
 .authCard {
     width: 100%;
-    max-width: 450px;
+    max-width: 440px;
     padding: 3rem;
-    text-align: center;
+    background: var(--bg-surface);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 40px 100px -40px rgba(0, 0, 0, 0.8);
+    animation: authSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes authSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .authCard h1 {
@@ -51,16 +67,18 @@
 .inputGroup input {
     width: 100%;
     padding: 0.8rem 1rem;
-    background: var(--glass-bg);
+    background: var(--bg-primary);
     border: 1px solid var(--glass-border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     color: white;
-    outline: none;
-    transition: border-color 0.2s;
+    font-size: 0.95rem;
+    transition: var(--transition);
 }
 
 .inputGroup input:focus {
-    border-color: var(--accent-purple);
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
 }
 
 .switch {

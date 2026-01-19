@@ -28,9 +28,9 @@ export default function LoginPage() {
 
     return (
         <div className={styles.authContainer}>
-            <div className={`${styles.authCard} glass`}>
-                <h1 className="gradient-text">Welcome Back</h1>
-                <p>Log in to continue your adaptive learning journey.</p>
+            <div className={styles.authCard}>
+                <h1 className="outfit">Cognitive Access</h1>
+                <p>Synchronize with your adaptive learning environment.</p>
 
                 {error && (
                     <div className={styles.error}>

@@ -134,45 +134,33 @@ export default function CollegeDashboard() {
     return (
         <div className={styles.container}>
             <header className={styles.header}>
-                <div>
-                    <h1 className="gradient-text">Institution Hub</h1>
+                <div className="animate-slide-up">
+                    <h1 className="outfit">Institution Control</h1>
                     <p className={styles.subtext}>Master Administrative Control | {user?.name}</p>
                 </div>
-                <div className={styles.licenseInfo}>
-                    <div className={styles.expiryBadge}>Enterprise License: Active</div>
-                    <span className={styles.licenseDate}>Expires: Jan 2027</span>
+                <div className={`${styles.licenseInfo} animate-slide-up`} style={{ animationDelay: '0.1s' }}>
+                    <div className={styles.expiryBadge}>Enterprise Active</div>
+                    <span className={styles.licenseDate}>Renew: Jan 2027</span>
                 </div>
             </header>
 
             {/* Stats Overview */}
             <section className={styles.statsGrid}>
-                <div className={`${styles.statCard} glass-card`}>
-                    <div className={styles.statIcon}>👨‍🏫</div>
-                    <div className={styles.statInfo}>
-                        <div className={styles.statValue}>{teachers.length}</div>
-                        <div className={styles.statLabel}>Active Faculty</div>
-                    </div>
+                <div className={`${styles.statCard} animate-slide-up`} style={{ animationDelay: '0.2s' }}>
+                    <div className={styles.statLabel}>Active Faculty</div>
+                    <div className={styles.statValue}>{teachers.length}</div>
                 </div>
-                <div className={`${styles.statCard} glass-card`}>
-                    <div className={styles.statIcon}>✅</div>
-                    <div className={styles.statInfo}>
-                        <div className={styles.statValue}>{pendingCourses.length}</div>
-                        <div className={styles.statLabel}>Pending Approvals</div>
-                    </div>
+                <div className={`${styles.statCard} animate-slide-up`} style={{ animationDelay: '0.3s' }}>
+                    <div className={styles.statLabel}>Pending Logic</div>
+                    <div className={styles.statValue}>{pendingCourses.length}</div>
                 </div>
-                <div className={`${styles.statCard} glass-card`}>
-                    <div className={styles.statIcon}>🎓</div>
-                    <div className={styles.statInfo}>
-                        <div className={styles.statValue}>1,240</div>
-                        <div className={styles.statLabel}>Active Students</div>
-                    </div>
+                <div className={`${styles.statCard} animate-slide-up`} style={{ animationDelay: '0.4s' }}>
+                    <div className={styles.statLabel}>Active Students</div>
+                    <div className={styles.statValue}>1,240</div>
                 </div>
-                <div className={`${styles.statCard} glass-card`}>
-                    <div className={styles.statIcon}>🧠</div>
-                    <div className={styles.statInfo}>
-                        <div className={styles.statValue}>84%</div>
-                        <div className={styles.statLabel}>AI Efficiency</div>
-                    </div>
+                <div className={`${styles.statCard} animate-slide-up`} style={{ animationDelay: '0.5s' }}>
+                    <div className={styles.statLabel}>AI Efficiency</div>
+                    <div className={styles.statValue}>84%</div>
                 </div>
             </section>
 

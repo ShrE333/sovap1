@@ -184,16 +184,16 @@ export default function TeacherPage() {
     return (
         <div className={styles.container}>
             <header className={styles.header}>
-                <div>
-                    <h1 className="gradient-text">Faculty Workbench</h1>
-                    <p className={styles.subtext}>Welcome back, {user?.name}. You have absolute control over course logic.</p>
+                <div className="animate-slide-up">
+                    <h1 className="outfit">Faculty Workbench</h1>
+                    <p className={styles.subtext}>Welcome back, {user?.name}. Orchestrate your intelligence units here.</p>
                 </div>
-                <div className={styles.headerActions}>
-                    <button className={`${styles.actionBtn} btn-secondary`} onClick={() => setShowCreateCourse(true)}>
-                        ✨ Magic AI Create
+                <div className={`${styles.headerActions} animate-slide-up`} style={{ animationDelay: '0.1s' }}>
+                    <button className="btn-secondary" onClick={() => setShowCreateCourse(true)}>
+                        ✨ Magic AI
                     </button>
-                    <label className={`${styles.actionBtn} btn-primary`} style={{ cursor: isUploading ? 'not-allowed' : 'pointer', opacity: isUploading ? 0.7 : 1 }}>
-                        {isUploading ? '🪄 Synthesizing...' : '📘 PDF to Course'}
+                    <label className="btn-primary" style={{ cursor: isUploading ? 'not-allowed' : 'pointer', opacity: isUploading ? 0.7 : 1 }}>
+                        {isUploading ? '🪄 Synthesizing...' : '📘 PDF Import'}
                         <input
                             type="file"
                             accept=".pdf"
@@ -207,26 +207,17 @@ export default function TeacherPage() {
 
             {/* Stats Panel */}
             <section className={styles.statsGrid}>
-                <div className={`${styles.statCard} glass-card`}>
-                    <div className={styles.statIcon}>👥</div>
-                    <div className={styles.statInfo}>
-                        <div className={styles.statValue}>{stats.activeStudents}</div>
-                        <div className={styles.statLabel}>Active Students</div>
-                    </div>
+                <div className={`${styles.statCard} animate-slide-up`} style={{ animationDelay: '0.2s' }}>
+                    <div className={styles.statLabel}>Active Students</div>
+                    <div className={styles.statValue}>{stats.activeStudents}</div>
                 </div>
-                <div className={`${styles.statCard} glass-card`}>
-                    <div className={styles.statIcon}>🎯</div>
-                    <div className={styles.statInfo}>
-                        <div className={styles.statValue}>{stats.avgConfidence}%</div>
-                        <div className={styles.statLabel}>Avg. Student Confidence</div>
-                    </div>
+                <div className={`${styles.statCard} animate-slide-up`} style={{ animationDelay: '0.3s' }}>
+                    <div className={styles.statLabel}>Avg. Confidence</div>
+                    <div className={styles.statValue}>{stats.avgConfidence}%</div>
                 </div>
-                <div className={`${styles.statCard} glass-card`}>
-                    <div className={styles.statIcon}>✅</div>
-                    <div className={styles.statInfo}>
-                        <div className={styles.statValue}>{stats.completionRate}%</div>
-                        <div className={styles.statLabel}>Completion Rate</div>
-                    </div>
+                <div className={`${styles.statCard} animate-slide-up`} style={{ animationDelay: '0.4s' }}>
+                    <div className={styles.statLabel}>Completion Rate</div>
+                    <div className={styles.statValue}>{stats.completionRate}%</div>
                 </div>
             </section>
 
@@ -386,7 +377,7 @@ export default function TeacherPage() {
                                 />
                             </div>
                             <div className={styles.modalFooter}>
-                                <button type="button" className="btn-secondary" onClick={() => setShowCreateCourse(false)}>Cancel</button>
+                                <button type="button" className="btn-ghost" onClick={() => setShowCreateCourse(false)}>Cancel</button>
                                 <button type="submit" className="btn-primary" disabled={loading}>
                                     {loading ? '🪄 Generating...' : 'Start Magic Generation'}
                                 </button>

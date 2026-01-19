@@ -60,14 +60,14 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
     return (
         <div className={styles.learnContainer}>
             <header className={styles.learnHeader}>
-                <div className={styles.topicBadge}>
-                    Module: {currentCourse?.modules.find(m => m.topics.some(t => t.id === currentTopic.id))?.title || 'Learning'}
+                <div className={`${styles.topicBadge} animate-slide-up`}>
+                    Unit: {currentCourse?.modules.find(m => m.topics.some(t => t.id === currentTopic.id))?.title || 'Learning'}
                 </div>
-                <h1>{currentTopic.title}</h1>
-                <div className={styles.progressBar}>
+                <h1 className="outfit animate-slide-up" style={{ animationDelay: '0.1s' }}>{currentTopic.title}</h1>
+                <div className={`${styles.progressBar} animate-slide-up`} style={{ animationDelay: '0.2s' }}>
                     <div
                         className={styles.progressFill}
-                        style={{ width: `${(Object.keys(state.topicMastery).length / (currentCourse?.modules.reduce((acc, m) => acc + m.topics.length, 0) || 10)) * 100}%` }}
+                        style={{ width: `${(Object.keys(state.topicMastery).length / (currentCourse?.modules.reduce((acc, m) => acc + m.topics.length, 0) || 1)) * 100}%` }}
                     />
                 </div>
             </header>
@@ -98,29 +98,23 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
                 </section>
 
                 <aside className={styles.controls}>
-                    <div className="glass-card">
-                        <h3>Intellectual Check</h3>
-                        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                            How well do you understand this concept?
+                    <div className={`${styles.glassCard} animate-slide-up`} style={{ animationDelay: '0.3s' }}>
+                        <h3 className={styles.chatTitle}>Knowledge Verification</h3>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+                            Update your certainty level for the cognitive engine.
                         </p>
 
-                        <div className={styles.sliderContainer}>
-                            <input
-                                type="range"
-                                min="0"
-                                max="1"
-                                step="0.01"
-                                value={confidence}
-                                onChange={(e) => setConfidence(parseFloat(e.target.value))}
-                                className={styles.slider}
-                            />
-                            <div className={styles.sliderLabels}>
-                                <span>Lost</span>
-                                <span>Confident</span>
-                            </div>
-                            <div className={styles.confidenceValue} style={{ color: confidence > 0.8 ? 'var(--success)' : confidence > 0.4 ? 'var(--warning)' : 'var(--error)' }}>
-                                {(confidence * 100).toFixed(0)}% Confidence
-                            </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value={confidence}
+                            onChange={(e) => setConfidence(parseFloat(e.target.value))}
+                            className={styles.slider}
+                        />
+                        <div className={styles.confidenceValue}>
+                            {(confidence * 100).toFixed(0)}% <span style={{ fontSize: '0.8rem', fontWeight: 400 }}>Certainty</span>
                         </div>
 
                         <button
@@ -132,14 +126,14 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
                         </button>
                     </div>
 
-                    <div className={`${styles.aiChat} glass`}>
-                        <h3>Course Mentor</h3>
+                    <div className={`${styles.glassCard} ${styles.aiChat} animate-slide-up`} style={{ animationDelay: '0.4s' }}>
+                        <h3 className={styles.chatTitle}>Intelligence Feed</h3>
                         <div className={styles.chatBox}>
                             <div className={styles.message}>
-                                <strong>AI:</strong> Based on your progress, you're doing great with <strong>{currentTopic.title}</strong>. Ask me anything about this topic!
+                                🤖 SOVAP Assistant: You're currently analyzing <strong>{currentTopic.title}</strong>. Ask me anything to refine your mental model.
                             </div>
                         </div>
-                        <input type="text" placeholder="Ask AI..." className={styles.chatInput} />
+                        <input type="text" placeholder="Query cognitive mentor..." className={styles.chatInput} />
                     </div>
                 </aside>
             </div>
