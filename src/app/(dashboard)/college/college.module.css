@@ -42,13 +42,13 @@
 }
 
 .expiryBadge {
-    background: rgba(16, 185, 129, 0.05);
+    background: #E6FFFA;
     color: var(--success);
     padding: 0.2rem 0.6rem;
     border-radius: 4px;
     font-size: 0.7rem;
     font-weight: 700;
-    border: 1px solid rgba(16, 185, 129, 0.1);
+    border: 1px solid #B2F5EA;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -123,18 +123,20 @@
 
 .countBadge {
     font-size: 0.75rem;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-secondary);
     padding: 0.25rem 0.75rem;
     border-radius: 99px;
-    color: var(--text-muted);
+    color: var(--brand-navy);
+    font-weight: 600;
 }
 
 .panelBody {
     padding: 1.25rem;
     min-height: 300px;
-    background: rgba(255, 255, 255, 0.01);
-    border: 1px solid var(--glass-border);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
 }
 
 .emptyInternal {
@@ -145,6 +147,8 @@
     color: var(--text-muted);
     font-size: 0.85rem;
     font-style: italic;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
 }
 
 /* Lists */
@@ -159,15 +163,16 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--glass-border);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     transition: var(--transition);
 }
 
 .listItem:hover {
-    border-color: rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.03);
+    border-color: var(--brand-orange);
+    transform: translateX(4px);
+    box-shadow: var(--shadow-sm);
 }
 
 .name {
@@ -186,7 +191,7 @@
 
 .count {
     font-size: 0.85rem;
-    color: var(--accent-primary);
+    color: var(--brand-teal);
     font-weight: 600;
 }
 
@@ -200,8 +205,8 @@
 /* Approvals */
 .approvalItem {
     padding: 1rem;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--glass-border);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
     margin-bottom: 0.75rem;
 }
@@ -236,7 +241,7 @@
 }
 
 .statusMini[data-status="generating"] {
-    color: var(--accent-primary);
+    color: var(--brand-orange);
 }
 
 .statusMini[data-status="published"] {
@@ -309,11 +314,11 @@
 
 .modalForm input {
     width: 100%;
-    background: var(--bg-primary);
-    border: 1px solid var(--glass-border);
+    background: var(--bg-surface);
+    border: 2px solid var(--border-color);
     border-radius: var(--radius-sm);
     padding: 0.75rem;
-    color: white;
+    color: var(--brand-navy);
     font-family: inherit;
 }
 
@@ -329,18 +334,19 @@
 }
 
 .codeBlock {
-    background: var(--bg-primary);
+    background: var(--bg-secondary);
     padding: 1rem;
     border-radius: var(--radius-sm);
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--border-color);
     text-align: left;
     margin: 1.25rem 0;
     font-family: monospace;
     font-size: 0.9rem;
+    color: var(--brand-navy);
 }
 
 .codeBlock code {
-    color: var(--accent-primary);
+    color: var(--brand-orange);
 }
 
 /* Loading */
