@@ -16,7 +16,7 @@ interface LearningContextType {
 
 const LearningStateContext = createContext<LearningContextType | undefined>(undefined);
 
-const GITHUB_STORAGE_BASE = "https://raw.githubusercontent.com/ShrE333/sovap-course-storage/main";
+const GITHUB_STORAGE_BASE = "https://raw.githubusercontent.com/ShrE333/sovap1/main";
 
 export function LearningStateProvider({ children }: { children: React.ReactNode }) {
     const [state, setState] = useState<StudentLearningState | null>(null);

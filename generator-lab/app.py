@@ -271,17 +271,29 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
                 # Find start and end of JSON in case of preamble
                 start = raw_content.find('{')
                 end = raw_content.rfind('}') + 1
-                if start != -1 and end != 0:
-                    module_expanded = json.loads(raw_content[start:end])
-                else:
-                    module_expanded = json.loads(raw_content)
+                json_str = raw_content[start:end] if (start != -1 and end != 0) else raw_content
+                
+                # SECURITY: Clean up potential invalid control characters that break json.loads
+                # This handles cases where Llama puts literal newlines inside string values
+                import re
+                # We want to keep regular newlines if they are BETWEEN fields, 
+                # but valid JSON strings (inside quotes) should have \n, not literal \n.
+                # json.loads(..., strict=False) handles many control chars but not all.
+                try:
+                    module_expanded = json.loads(json_str, strict=False)
+                except json.JSONDecodeError:
+                    # If still failing, attempt radical cleaning
+                    # Replace literal newlines inside strings or similar
+                    # (This is a simplified approach)
+                    module_expanded = json.loads(json_str.replace('\n', '\\n').replace('\r', '\\r'), strict=False)
+                    
             except Exception as parse_err:
                 print(f"[!] JSON Parse error for module {m_title}: {str(parse_err)}", flush=True)
                 # Fallback: attempt to fix common issues or create a minimal valid module
                 module_expanded = {
                     "title": m_title,
-                    "theory": raw_content[:2000] + "...", 
-                    "code_lab": "Review full logs for generation error.",
+                    "theory": raw_content[:2000] if raw_content else "Content generation failed.", 
+                    "code_lab": "Manual review required due to formatting error.",
                     "prerequisites": [],
                     "mcqs": []
                 }

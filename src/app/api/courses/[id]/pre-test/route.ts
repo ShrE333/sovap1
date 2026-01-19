@@ -63,7 +63,7 @@ export async function GET(
 
         // Try to fetch from GitHub Storage for AI Course
         try {
-            const GITHUB_BASE = "https://raw.githubusercontent.com/ShrE333/sovap-course-storage/main";
+            const GITHUB_BASE = "https://raw.githubusercontent.com/ShrE333/sovap1/main";
             const response = await fetch(`${GITHUB_BASE}/courses/${id}/master.json`);
             if (response.ok) {
                 const courseData = await response.json();

@@ -290,7 +290,7 @@ export default function TeacherPage() {
                                                         🗑️
                                                     </button>
                                                     {course.status === 'published' && <button className="btn-secondary small">Analytics</button>}
-                                                    <Link href={`/dashboard/learn/${course.id}`} className="btn-primary small">
+                                                    <Link href={`/learn/${course.id}`} className="btn-primary small">
                                                         {course.status === 'published' ? 'Manage' : 'Preview'}
                                                     </Link>
                                                 </>
