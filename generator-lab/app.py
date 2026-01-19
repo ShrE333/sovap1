@@ -148,7 +148,7 @@ async def health():
 
 @app.post("/generate")
 async def generate_course(request: CourseRequest, background_tasks: BackgroundTasks):
-    logger.info(f"Received request to generate course: {request.title} ({request.course_id})")
+    print(f"[*] Received request to generate course: {request.title} ({request.course_id})", flush=True)
     background_tasks.add_task(generate_pipeline, request.course_id, request)
     return {"message": "Generation started", "course_id": request.course_id}
 
@@ -159,20 +159,20 @@ async def generate_from_pdf(
     title: str = Form(...),
     file: UploadFile = File(...)
 ):
-    logger.info(f"PDF Received: {file.filename} for Course: {course_id}")
+    print(f"[*] PDF Received: {file.filename} for Course: {course_id}", flush=True)
     background_tasks.add_task(generate_pipeline, course_id, CourseRequest(course_id=course_id, title=title, description=f"PDF: {file.filename}"))
     return {"message": "PDF Processing started", "course_id": course_id}
 
 async def generate_pipeline(course_id: str, request: CourseRequest):
-    logger.info(f"STARTING PIPELINE for {course_id}: {request.title}")
+    print(f"[*] STARTING PIPELINE for {course_id}: {request.title}", flush=True)
     
     if not client:
-        logger.error(f"Groq Client not initialized. Check GROQ_API_KEY.")
+        print(f"[!] ERROR: Groq Client not initialized. Check GROQ_API_KEY.", flush=True)
         return
 
     try:
         # --- PHASE 1.1: SYLLABUS GENERATION ---
-        logger.info(f"Phase 1.1: Generating high-level Syllabus for {request.title}...")
+        print(f"[*] Phase 1.1: Generating high-level Syllabus for {request.title}...", flush=True)
         ctx = request.description if request.description and len(request.description) > 5 else f"A comprehensive course on {request.title}"
         syllabus_prompt = f"Create a detailed syllabus for '{request.title}'. Context: {ctx}. Return JSON with list of {request.modules_count} modules, each with 3 subtopics."
         
@@ -182,13 +182,13 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
             response_format={"type": "json_object"}
         )
         syllabus = json.loads(syllabus_resp.choices[0].message.content)
-        logger.info(f"Syllabus generated with {len(syllabus.get('modules', []))} modules.")
+        print(f"[*] Syllabus generated with {len(syllabus.get('modules', []))} modules.", flush=True)
         
         # --- PHASE 1.2: DEPTH EXPANSION (Recursive) ---
         full_course = {"course_id": course_id, "title": request.title, "modules": []}
         
         for i, module in enumerate(syllabus.get("modules", [])):
-            logger.info(f"Expanding Module {i+1}: {module['title']}...")
+            print(f"[*] Expanding Module {i+1}: {module['title']}...", flush=True)
             module_prompt = f"Write deep educational theory, a code lab, and {request.mcqs_per_module} MCQs for the module: {module['title']}. Topics: {module.get('subtopics', [])}. Overall Context: {ctx}"
             
             chunk_resp = await client.chat.completions.create(
@@ -200,19 +200,18 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
             full_course["modules"].append(module_expanded)
 
         # --- PHASE 2: AI QA AGENT ---
-        logger.info(f"Phase 2: Running AI QA Agent...")
+        print(f"[*] Phase 2: Running AI QA Agent...", flush=True)
         qa_agent = CourseQA(course_id)
         report = await qa_agent.validate(full_course)
         
         if report.status == "FAIL":
-            logger.error(f"QA FAILED for {course_id}. Errors: {report.critical_errors}")
-            # Even if QA fails, we might want to see what was generated, but the logic currently stops here.
+            print(f"[!] QA FAILED for {course_id}. Errors: {report.critical_errors}", flush=True)
             return
 
-        logger.info(f"QA PASSED for {course_id} with score {report.score}/100")
+        print(f"[+] QA PASSED for {course_id} with score {report.score}/100", flush=True)
 
         # --- PHASE 3: STORAGE (GitHub) ---
-        logger.info(f"Phase 3: Committing course to GitHub...")
+        print(f"[*] Phase 3: Committing course to GitHub...", flush=True)
         
         try:
             # 1. Generate PDF
@@ -296,25 +295,27 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
                     pdf_content
                 )
                 
-                logger.info(f"Successfully finished GitHub storage phase for {course_id}")
+                print(f"[+] Successfully finished GitHub storage phase for {course_id}", flush=True)
             else:
                 # Local Save Fallback
                 with open(f"storage/{course_id}/master.json", "w") as f:
                     json.dump(full_course, f, indent=2)
-                logger.warning(f"GITHUB_TOKEN or REPO not set. Course saved locally in storage/{course_id}/")
+                print(f"[!] GITHUB_TOKEN or REPO not set. Course saved locally in storage/{course_id}/", flush=True)
         except Exception as e:
-            print(f"[GH-ERROR] Storage phase failed for {course_id}: {str(e)}")
+            print(f"[GH-ERROR] Storage phase failed for {course_id}: {str(e)}", flush=True)
 
         # --- PHASE 4: VECTOR CHUNKING ---
-        print(f"[*] Phase 4: Chunking and Vectorizing Concept Units...")
+        print(f"[*] Phase 4: Chunking and Vectorizing Concept Units...", flush=True)
         await vectorize_course(course_id, full_course)
 
         # --- PHASE 5: KNOWLEDGE GRAPH ---
-        print(f"[*] Phase 5: Building Knowledge Graph in Neo4j...")
+        print(f"[*] Phase 5: Building Knowledge Graph in Neo4j...", flush=True)
         await build_knowledge_graph(course_id, full_course)
 
     except Exception as e:
-        logger.error(f"Pipeline CRITICAL failure for {course_id}: {str(e)}", exc_info=True)
+        print(f"[EX] Pipeline CRITICAL failure for {course_id}: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
 
 class CourseQA:
     def __init__(self, course_id: str):
