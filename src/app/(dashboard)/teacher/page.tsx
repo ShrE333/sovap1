@@ -251,20 +251,20 @@ export default function TeacherPage() {
                                                 <span className={styles.publicBadge}>🏛️ PUBLIC</span>
                                             )}
                                         </div>
-                                        <span className={`${styles.statusBadge} ${course.status === 'published' ? styles.statusLive :
+                                        <span className={`${styles.statusBadge} ${(course.status === 'published' || course.status === 'pending_approval') ? styles.statusLive :
                                             course.status === 'generating' ? styles.statusGenerating :
                                                 styles.statusPending
                                             }`}>
-                                            {course.status === 'published' ? '🟢 LIVE' :
+                                            {course.status === 'published' || course.status === 'pending_approval' ? '🟢 LIVE' :
                                                 course.status === 'generating' ? '🧪 GENERATING' :
-                                                    '🕒 PENDING APPROVAL'}
+                                                    '🕒 FINALIZING'}
                                         </span>
                                     </div>
                                     <h3 className={styles.courseTitle}>{course.title}</h3>
                                     <p className={styles.courseDesc}>{course.description}</p>
                                     <div className={styles.courseFooter}>
                                         <span className={styles.studentStat}>
-                                            {course.status === 'published' ? (
+                                            {course.status === 'published' || course.status === 'pending_approval' ? (
                                                 <><strong>{course.studentCount}</strong> Students Enrolled</>
                                             ) : (
                                                 <em style={{ color: 'var(--text-muted)' }}>{course.status === 'generating' ? 'AI Agent busy...' : 'Finalizing...'}</em>
@@ -282,7 +282,7 @@ export default function TeacherPage() {
                                                     </button>
                                                     {course.status === 'published' && <button className="btn-secondary small">Analytics</button>}
                                                     <Link href={`/learn/${course.id}`} className="btn-primary small">
-                                                        {course.status === 'published' ? 'Manage' : 'Preview'}
+                                                        {(course.status === 'published' || course.status === 'pending_approval') ? 'Manage' : 'Preview'}
                                                     </Link>
                                                 </>
                                             ) : (

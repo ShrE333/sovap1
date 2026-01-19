@@ -263,29 +263,17 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
             Overall Course Context: {ctx}.
 
             Instructions:
-            1. **Theory**: Provide approx 800-1000 words of rich intelligence. Use Markdown (### headers, **bolding**). 
-               Break it down into: 'Concept', 'Architecture', 'Security Implications', and 'Industry Implementation'.
-            2. **Code Lab**: Provide a step-by-step hands-on laboratory exercise. 
-            3. **Assessment**: Create exactly {request.mcqs_per_module} MCQs.
-
-            CORE REQUIREMENT: You MUST return a JSON object. All long text fields must be valid JSON strings (properly escaped). 
-            Do NOT include any text outside the JSON object.
+            1. **Theory**: Provide EXTENSIVE, DETAILED intelligence. MUST be at least 1500 words. Cover 'Concept', 'Architecture', 'Security', 'Industry Use Cases'.
+            2. **Format**: Use Markdown.
+            3. **Output**: Return a valid JSON object. Escape all quotes and newlines in the content.
 
             JSON Structure:
             {{
               "title": "{m_title}",
-              "theory": "Markdown content here...",
-              "code_lab": "Markdown content here...",
+              "theory": "LONG MARKDOWN CONTENT HERE...",
+              "code_lab": "Step-by-step lab instructions...",
               "prerequisites": ["concept1", "concept2"],
-              "mcqs": [
-                {{
-                  "question": "Question text",
-                  "options": ["A", "B", "C", "D"],
-                  "correctIndex": 0,
-                  "difficulty": "basic",
-                  "explanation": "Why it is correct"
-                }}
-              ]
+              "mcqs": [...]
             }}
             """
             
