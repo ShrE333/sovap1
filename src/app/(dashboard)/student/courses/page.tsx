@@ -27,6 +27,8 @@ export default function StudentCoursesPage() {
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'enrolled' | 'available'>('all');
+    const [joinCode, setJoinCode] = useState('');
+    const [joining, setJoining] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -34,7 +36,7 @@ export default function StudentCoursesPage() {
 
     const loadData = async () => {
         try {
-            // Fetch published courses
+            // Fetch published courses (this will be filtered by API now)
             const coursesRes = await apiCall('/api/courses?status=published');
             const coursesData = await coursesRes.json();
             setCourses(coursesData.courses || []);
@@ -47,6 +49,32 @@ export default function StudentCoursesPage() {
             console.error('Failed to load data:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleJoinByCode = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!joinCode.trim()) return;
+
+        setJoining(true);
+        try {
+            const res = await apiCall('/api/enrollments', {
+                method: 'POST',
+                body: JSON.stringify({ courseId: joinCode.trim() })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                alert('Successfully joined the course!');
+                setJoinCode('');
+                loadData();
+            } else {
+                alert(data.error || 'Failed to join course. Check the code.');
+            }
+        } catch (err) {
+            alert('Something went wrong. Please try again.');
+        } finally {
+            setJoining(false);
         }
     };
 
@@ -64,9 +92,24 @@ export default function StudentCoursesPage() {
     return (
         <div className={styles.container}>
             <header className={styles.header}>
-                <div>
-                    <h1 className="gradient-text">My Learning Journey</h1>
-                    <p>AI-powered adaptive learning tailored to your cognitive profile</p>
+                <div className={styles.headerTop}>
+                    <div>
+                        <h1 className="gradient-text">My Learning Journey</h1>
+                        <p>AI-powered adaptive learning tailored to your cognitive profile</p>
+                    </div>
+
+                    <form onSubmit={handleJoinByCode} className={styles.joinForm}>
+                        <input
+                            type="text"
+                            placeholder="Course Code (e.g. course-uuid)"
+                            value={joinCode}
+                            onChange={(e) => setJoinCode(e.target.value)}
+                            className={styles.joinInput}
+                        />
+                        <button type="submit" disabled={joining} className={styles.joinButton}>
+                            {joining ? 'Joining...' : 'Join Course'}
+                        </button>
+                    </form>
                 </div>
 
                 <div className={styles.filterTabs}>
@@ -86,7 +129,7 @@ export default function StudentCoursesPage() {
                         className={filter === 'available' ? styles.activeTab : styles.tab}
                         onClick={() => setFilter('available')}
                     >
-                        Explore
+                        Explore (Public)
                     </button>
                 </div>
             </header>

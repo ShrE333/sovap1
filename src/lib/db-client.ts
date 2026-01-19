@@ -218,16 +218,17 @@ export const dbClient = {
 
         // Fetch teachers for these courses to avoid complex join errors
         const teacherIds = Array.from(new Set((data || []).map((c: any) => c.teacher_id).filter(Boolean)));
-        let teachersMap: Record<string, string> = {};
+        let teachersMap: Record<string, { name: string, role: string }> = {};
 
         if (teacherIds.length > 0) {
-            const { data: teachers } = await supabaseAdmin.from('users').select('id, name').in('id', teacherIds);
-            teachersMap = (teachers || []).reduce((acc: any, t: any) => ({ ...acc, [t.id]: t.name }), {});
+            const { data: teachers } = await supabaseAdmin.from('users').select('id, name, role').in('id', teacherIds);
+            teachersMap = (teachers || []).reduce((acc: any, t: any) => ({ ...acc, [t.id]: { name: t.name, role: t.role } }), {});
         }
 
         return (data || []).map((c: any) => ({
             ...c,
-            teacherName: teachersMap[c.teacher_id] || 'Unknown'
+            teacherName: teachersMap[c.teacher_id]?.name || 'Unknown',
+            creatorRole: teachersMap[c.teacher_id]?.role || 'unknown'
         }));
     },
 

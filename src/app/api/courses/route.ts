@@ -9,19 +9,20 @@ const createCourseSchema = z.object({
     description: z.string().optional(),
     modules: z.array(z.any()),
     estimatedHours: z.number().optional(),
+    modules_count: z.number().optional(),
 });
 
 export async function POST(req: NextRequest) {
     try {
         const user = await verifyAuth(req);
-        if (!user || user.role !== 'teacher') {
+        if (!user || (user.role !== 'teacher' && user.role !== 'college')) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         const body = await req.json();
         const data = createCourseSchema.parse(body);
 
-        // Check course limit for college
+        // Check course limit for college (skip for admin maybe? No, let's keep it)
         const colleges = await dbClient.getColleges();
         const college = colleges.find((c: any) => c.id === user.collegeId);
 
@@ -38,15 +39,13 @@ export async function POST(req: NextRequest) {
             modules: data.modules,
             college_id: user.collegeId || null,
             teacher_id: user.id,
-            status: 'published' // Make it visible to students immediately
+            status: 'published'
         });
 
-        // Trigger AI Course Generation Lab (FastAPI)
-        // This is Phase 1-5 of the platform architecture
+        // Trigger AI Course Generation Lab
         const generatorUrl = process.env.GENERATOR_LAB_URL || 'http://localhost:8000';
 
         try {
-            // We fire and forget (don't await) to keep API responsive
             fetch(`${generatorUrl}/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -54,7 +53,7 @@ export async function POST(req: NextRequest) {
                     course_id: course.id,
                     title: course.title,
                     description: course.description,
-                    modules_count: 5,
+                    modules_count: data.modules_count || 5, // Use schema value if exists
                     mcqs_per_module: 10
                 })
             }).catch(e => console.error("Generator Lab Trigger Failed:", e));
@@ -65,17 +64,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ course });
     } catch (error) {
         if (error instanceof z.ZodError) {
-            return NextResponse.json(
-                { error: 'Invalid input', details: error.errors },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: 'Invalid input', details: error.errors }, { status: 400 });
         }
-
-        console.error('Create course error:', error);
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Internal server error' },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });
     }
 }
 
@@ -92,20 +83,29 @@ export async function GET(req: NextRequest) {
             filters.status = 'published';
         } else if (user.role === 'student') {
             filters.status = 'published';
-        } else if (user.role === 'teacher') {
-            filters.teacher_id = user.id;
-        } else if (user.role === 'college') {
+            filters.college_id = user.collegeId;
+        } else if (user.role === 'teacher' || user.role === 'college') {
             filters.college_id = user.collegeId;
         }
 
-        const courses = await dbClient.getCourses(filters);
+        let courses = await dbClient.getCourses(filters);
+
+        // Apply dynamic visibility logic
+        if (user && user.role === 'student') {
+            // Students can only see:
+            // 1. Courses created by 'college' admin (Public)
+            // 2. Courses they are ALREADY enrolled in
+            const enrollmentsRes = await dbClient.getEnrollments({ user_id: user.id });
+            const enrolledIds = new Set(enrollmentsRes.map((e: any) => e.course_id));
+
+            courses = courses.filter((c: any) =>
+                c.creatorRole === 'college' || enrolledIds.has(c.id)
+            );
+        }
 
         return NextResponse.json({ courses });
     } catch (error) {
         console.error('Get courses error:', error);
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Internal server error' },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

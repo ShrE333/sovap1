@@ -20,31 +20,35 @@ export async function GET(req: NextRequest) {
             });
         }
 
-        // 1. Get Teacher's Courses
-        const courses = await dbClient.getCourses({ teacher_id: user.id });
+        // 1. Get All College Courses
+        const courses = await dbClient.getCourses({ college_id: user.collegeId });
 
-        // 2. Get Enrollments for these courses
+        // 2. Get Enrollments only for courses OWNED by this teacher for stats
+        const ownedCourses = courses.filter(c => c.teacher_id === user.id);
         const allEnrollments = await Promise.all(
-            courses.map(c => dbClient.getEnrollments({ course_id: c.id }))
+            ownedCourses.map(c => dbClient.getEnrollments({ course_id: c.id }))
         );
-        const teacherEnrollments = allEnrollments.flat();
-        const studentIds = Array.from(new Set(teacherEnrollments.map(e => (e as any).user_id)));
+        const myEnrollments = allEnrollments.flat();
+        const studentIds = Array.from(new Set(myEnrollments.map(e => (e as any).user_id)));
 
-        // 3. Stats
+        // 3. Stats (based on teacher's own students)
         const activeStudents = studentIds.length;
         const avgConfidence = 72; // Platform metric
         const completionRate = 0;
 
-        // 4. Enhance Courses with stats
+        // 4. Enhance Courses with stats and ownership
         const enhancedCourses = courses.map(c => {
-            const enrolledCount = teacherEnrollments.filter(e => (e as any).course_id === c.id).length;
+            const enrolledCount = myEnrollments.filter(e => (e as any).course_id === c.id).length;
             return {
                 id: c.id,
                 title: c.title,
                 studentCount: enrolledCount,
                 status: c.status,
                 modulesCount: (c as any).modules?.length || 0,
-                description: (c as any).description
+                description: (c as any).description,
+                isOwner: c.teacher_id === user.id,
+                teacherName: c.teacherName,
+                creatorRole: (c as any).creatorRole
             };
         });
 

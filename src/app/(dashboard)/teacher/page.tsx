@@ -19,6 +19,9 @@ interface Course {
     description: string;
     status: string;
     studentCount: number;
+    isOwner?: boolean;
+    teacherName?: string;
+    creatorRole?: string;
 }
 
 interface DashboardStats {
@@ -62,6 +65,24 @@ export default function TeacherPage() {
             console.error('Failed to load dashboard:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleCloneCourse = async (courseId: string) => {
+        if (!confirm('Do you want to clone this course to your account?')) return;
+
+        try {
+            const res = await apiCall(`/api/courses/${courseId}/clone`, {
+                method: 'POST'
+            });
+            if (res.ok) {
+                alert('✨ Course cloned and adapted successfully!');
+                loadDashboard();
+            } else {
+                alert('Failed to clone course.');
+            }
+        } catch (error) {
+            console.error('Clone error:', error);
         }
     };
 
@@ -209,7 +230,17 @@ export default function TeacherPage() {
                             {courses.map((course, idx) => (
                                 <div key={course.id} className={`${styles.courseCard} glass-card`} style={{ animationDelay: `${idx * 0.1}s` }}>
                                     <div className={styles.courseMeta}>
-                                        <span className={styles.idTag}>ID: {course.id.split('-')[1] || course.id}</span>
+                                        <div className={styles.metaLeft}>
+                                            <span className={styles.idTag}>ID: {course.id.split('-')[1] || course.id.slice(0, 6)}</span>
+                                            {course.isOwner ? (
+                                                <span className={styles.ownerBadge}>OWNED</span>
+                                            ) : (
+                                                <span className={styles.sharedBadge}>SHARED: {course.teacherName}</span>
+                                            )}
+                                            {course.creatorRole === 'college' && (
+                                                <span className={styles.publicBadge}>🏛️ PUBLIC</span>
+                                            )}
+                                        </div>
                                         <span className={`${styles.statusBadge} ${course.status === 'published' ? styles.statusLive : styles.statusPending}`}>
                                             {course.status === 'published' ? '🟢 LIVE' : '🕒 PENDING'}
                                         </span>
@@ -221,8 +252,19 @@ export default function TeacherPage() {
                                             <strong>{course.studentCount}</strong> Students Enrolled
                                         </span>
                                         <div className={styles.cardActions}>
-                                            <button className="btn-secondary small">Analytics</button>
-                                            <Link href={`/learn/${course.id}`} className="btn-primary small">Edit Logic</Link>
+                                            {course.isOwner ? (
+                                                <>
+                                                    <button className="btn-secondary small">Analytics</button>
+                                                    <Link href={`/dashboard/learn/${course.id}`} className="btn-primary small">Manage Intelligence</Link>
+                                                </>
+                                            ) : (
+                                                <button
+                                                    className="btn-primary small"
+                                                    onClick={() => handleCloneCourse(course.id)}
+                                                >
+                                                    🪄 Clone & Adapt
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
