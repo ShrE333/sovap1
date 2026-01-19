@@ -174,7 +174,20 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
         # --- PHASE 1.1: SYLLABUS GENERATION ---
         print(f"[*] Phase 1.1: Generating high-level Syllabus for {request.title}...", flush=True)
         ctx = request.description if request.description and len(request.description) > 5 else f"A comprehensive course on {request.title}"
-        syllabus_prompt = f"Create a detailed syllabus for '{request.title}'. Context: {ctx}. Return JSON with list of {request.modules_count} modules, each with 3 subtopics."
+        syllabus_prompt = f"""
+        Create a detailed syllabus for '{request.title}'. 
+        Context: {ctx}. 
+        Return a JSON object with the following structure:
+        {{
+          "modules": [
+            {{
+              "title": "Module Title",
+              "subtopics": ["topic1", "topic2", "topic3"]
+            }}
+          ]
+        }}
+        Generate exactly {request.modules_count} modules.
+        """
         
         syllabus_resp = await client.chat.completions.create(
             messages=[{"role": "user", "content": syllabus_prompt}],
@@ -182,14 +195,34 @@ async def generate_pipeline(course_id: str, request: CourseRequest):
             response_format={"type": "json_object"}
         )
         syllabus = json.loads(syllabus_resp.choices[0].message.content)
-        print(f"[*] Syllabus generated with {len(syllabus.get('modules', []))} modules.", flush=True)
+        modules_list = syllabus.get("modules", [])
+        print(f"[*] Syllabus generated with {len(modules_list)} modules.", flush=True)
         
         # --- PHASE 1.2: DEPTH EXPANSION (Recursive) ---
         full_course = {"course_id": course_id, "title": request.title, "modules": []}
         
-        for i, module in enumerate(syllabus.get("modules", [])):
-            print(f"[*] Expanding Module {i+1}: {module['title']}...", flush=True)
-            module_prompt = f"Write deep educational theory, a code lab, and {request.mcqs_per_module} MCQs for the module: {module['title']}. Topics: {module.get('subtopics', [])}. Overall Context: {ctx}"
+        for i, module in enumerate(modules_list):
+            m_title = module.get("title", f"Module {i+1}")
+            print(f"[*] Expanding Module {i+1}: {m_title}...", flush=True)
+            module_prompt = f"""
+            Write deep educational theory, a code lab, and exactly {request.mcqs_per_module} MCQs for the module: {m_title}. 
+            Topics: {module.get('subtopics', [])}. 
+            Overall Context: {ctx}.
+            Return a JSON object with this structure:
+            {{
+              "title": "{m_title}",
+              "theory": "Extended theory content...",
+              "code_lab": "Step-by-step coding exercise...",
+              "mcqs": [
+                {{
+                  "question": "question text",
+                  "options": ["opt1", "opt2", "opt3", "opt4"],
+                  "correctIndex": 0,
+                  "difficulty": "basic|intermediate|advanced"
+                }}
+              ]
+            }}
+            """
             
             chunk_resp = await client.chat.completions.create(
                 messages=[{"role": "user", "content": module_prompt}],

@@ -3,14 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth/middleware';
 import { dbClient } from '@/lib/db-client';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const user = await verifyAuth(req);
         if (!user || user.role !== 'teacher') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const originalId = params.id;
+        const { id: originalId } = await params;
 
         // 1. Get original course
         const courses = await dbClient.getCourses();
