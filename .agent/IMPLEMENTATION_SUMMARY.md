@@ -51,6 +51,7 @@
 - ✅ Students can see courses with `pending_approval` status (treated as LIVE)
 - ✅ Empty course detection with proper error messages
 - ✅ Reset progress option for stuck courses
+- ✅ Fixed critical crash in `LearnPage` for AI-generated courses (missing `topics` array handled safest)
 - ✅ Auto-publish courses (no manual approval needed)
 
 ---
