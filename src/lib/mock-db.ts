@@ -45,6 +45,11 @@ export interface MockEnrollment {
     progress: number;
     status: 'active' | 'completed';
     created_at: string;
+    learningState?: {
+        masteryTags?: Record<string, string>;
+        topicConfidence?: Record<string, number>;
+        topicMastery?: Record<string, boolean>;
+    };
 }
 
 // Initial Mock Data Structure

@@ -405,5 +405,29 @@ export const dbClient = {
             ...data,
             user_id: data.student_id
         };
+    },
+
+    // === LEARNING STATE (Phase 0/6) ===
+    async getLearningState(userId: string, courseId: string) {
+        if (USE_MOCK) {
+            const enrollment = db.enrollments.find(e => e.user_id === userId && e.course_id === courseId);
+            return enrollment?.learningState || null;
+        }
+        // Supabase fallback (assumes metadata column exists or handled separately)
+        return null;
+    },
+
+    async updateLearningState(userId: string, courseId: string, state: any) {
+        if (USE_MOCK) {
+            const index = db.enrollments.findIndex(e => e.user_id === userId && e.course_id === courseId);
+            if (index === -1) throw new Error('Enrollment not found');
+
+            const current = db.enrollments[index].learningState || {};
+            db.enrollments[index].learningState = { ...current, ...state };
+            saveDb();
+            return db.enrollments[index].learningState;
+        }
+        // Supabase fallback
+        return null;
     }
 };

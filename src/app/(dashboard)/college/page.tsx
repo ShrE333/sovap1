@@ -191,6 +191,48 @@ export default function CollegeDashboard() {
             </section>
 
             <div className={styles.mainGrid}>
+                {/* Pending Approvals */}
+                <section className={styles.panelSection}>
+                    <div className={styles.panelHeader}>
+                        <h2>Logic Unit Approvals</h2>
+                        <span className={styles.countBadge}>{pendingCourses.length} Pending</span>
+                    </div>
+                    <div className={`${styles.panelBody} glass`}>
+                        {pendingCourses.length === 0 ? (
+                            <div className={styles.emptyInternal}>No units awaiting validation.</div>
+                        ) : (
+                            <div className={styles.list}>
+                                {pendingCourses.map((course) => (
+                                    <div key={course.id} className={styles.listItem}>
+                                        <div className={styles.info}>
+                                            <div className={styles.name}>{course.title}</div>
+                                            <div className={styles.meta} style={{ fontSize: '0.8rem', opacity: 0.7 }}>
+                                                {course.teacherName} • {new Date(course.created_at).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                        <div className={styles.actions} style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button
+                                                className="btn-primary small"
+                                                onClick={() => handleApprove(course.id, 'approve')}
+                                                style={{ background: 'var(--success)', borderColor: 'var(--success)' }}
+                                            >
+                                                ✔ Approve
+                                            </button>
+                                            <button
+                                                className="btn-secondary small"
+                                                onClick={() => handleDelete(course.id)}
+                                                style={{ color: 'var(--error)', borderColor: 'var(--error)' }}
+                                            >
+                                                🗑 Purge
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </section>
+
                 {/* Faculty Management */}
                 <section className={styles.panelSection}>
                     <div className={styles.panelHeader}>

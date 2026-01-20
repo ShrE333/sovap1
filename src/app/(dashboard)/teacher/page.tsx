@@ -318,28 +318,33 @@ export default function TeacherPage() {
                                             )}
                                         </span>
                                         <div className={styles.cardActions}>
-                                            {course.isOwner ? (
-                                                <>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                {/* Always show delete if owner or if status implies ownership/creation flow */}
+                                                {(course.isOwner || course.status === 'generating') && (
                                                     <button
-                                                        className="btn-secondary small"
-                                                        onClick={() => handleDeleteCourse(course.id)}
+                                                        className="btn-danger small"
+                                                        onClick={(e) => { e.preventDefault(); handleDeleteCourse(course.id); }}
                                                         title="Delete Unit"
+                                                        style={{ padding: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid #ef4444' }}
                                                     >
                                                         🗑️
                                                     </button>
-                                                    {course.status === 'published' && <button className="btn-secondary small">Analytics</button>}
+                                                )}
+
+                                                {/* Primary Actions */}
+                                                {course.isOwner ? (
                                                     <Link href={`/teacher/courses/${course.id}`} className="btn-primary small">
                                                         {(course.status === 'published' || course.status === 'pending_approval') ? 'Manage' : 'View Status'}
                                                     </Link>
-                                                </>
-                                            ) : (
-                                                <button
-                                                    className="btn-primary small"
-                                                    onClick={() => handleCloneCourse(course.id)}
-                                                >
-                                                    🪄 Clone & Adapt
-                                                </button>
-                                            )}
+                                                ) : (
+                                                    <button
+                                                        className="btn-primary small"
+                                                        onClick={() => handleCloneCourse(course.id)}
+                                                    >
+                                                        🪄 Clone & Adapt
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

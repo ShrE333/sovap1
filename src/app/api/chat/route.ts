@@ -1,19 +1,24 @@
 import { NextResponse } from 'next/server';
+import { RAGEngine } from '@/lib/engine/rag-engine';
 
 export async function POST(req: Request) {
     try {
         const { message, topicId, state } = await req.json();
 
-        // In a real implementation, we would call Gemma 2 API here.
-        // We would provide the topic content and student state as context (RAG).
+        // Phase 4: Retrieve Context via Qdrant (RAG)
+        const rag = RAGEngine.getInstance();
+        const context = await rag.retrieveContext(message, topicId);
 
-        // const response = await fetch('https://api.gemma2.ai/v1/chat', { ... });
+        // In a real implementation, we would feed this context to the LLM (Gemma 2).
+        // const prompt = `Context: ${JSON.stringify(context)} \n Question: ${message}`;
+        // const response = await llm.generate(prompt);
 
-        // Mock response for now
-        const mockResponse = `I'm your SOVAP AI assistant. Regarding ${topicId}, you've shown ${(state.topicConfidence[topicId] || 0) * 100}% confidence. What specific part can I help clarify?`;
+        // Mock response utilizing RAG source
+        const mockResponse = `(Source: ${context[0].source}) Based on our knowledge base: ${context[0].text}\n\nRegarding your question about "${message}", ensure you are cross-referencing this with the lab material.`;
 
         return NextResponse.json({ response: mockResponse });
     } catch (error) {
+        console.error("Chat Error:", error);
         return NextResponse.json({ error: 'Failed to process chat' }, { status: 500 });
     }
 }

@@ -59,6 +59,11 @@
 - ✅ **Added Course Sidebar**: Full module visibility and navigation
 - ✅ **Adaptive Reteaching**: Low scores trigger "Simplified Review Mode"
 - ✅ **Premium UI Overhaul**: Redesigned Landing, Login, Student & Teacher Dashboards with glassmorphism/gradients
+- ✅ **Focus Mode for Learning**: Auto-hide sidebar during lessons + Next/Prev Topic navigation
+- ✅ **Teacher Content View**: Added module expansion and fixed Student Preview
+- ✅ **Course Deletion Fixed**: Restored delete button for teachers and purge for admins
+- ✅ **College Dashboard Restore**: Re-enabled Logic Unit approval/rejection panel
+- ✅ **Backend Logic Complete**: Phase 0 (Baseline Save) -> Phase 6 (Adaptive MCQs) linked. Phase 4 (RAG) stubbed.
 
 ---
 

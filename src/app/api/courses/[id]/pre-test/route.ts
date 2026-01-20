@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth/middleware';
+import { dbClient } from '@/lib/db-client';
 
 // Mock Diagnostic Questions per Course
 const MOCK_PRE_TESTS: Record<string, any[]> = {
@@ -175,8 +176,18 @@ export async function POST(
             return { topicId: res.topicId, action, reason };
         });
 
-        // Store this in Supabase learning_states (Simulated for now)
-        // In real app: dbClient.saveLearningState(...)
+        // Store this in Supabase learning_states
+        try {
+            const masteryTags = results.reduce((acc: any, curr: any) => {
+                acc[curr.topicId] = curr.tag;
+                return acc;
+            }, {});
+
+            await dbClient.updateLearningState(user.id, id, { masteryTags });
+        } catch (dbError) {
+            console.error("Failed to save learning state:", dbError);
+            // Don't fail the request, just log it
+        }
 
         return NextResponse.json({
             message: 'Adaptive Roadmap Created!',
