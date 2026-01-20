@@ -1,8 +1,10 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLearningState } from '@/lib/contexts/LearningStateContext';
+import { useToast } from '@/lib/contexts/ToastContext';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import styles from './learn.module.css';
 import LabComponent from '@/components/adaptive/LabComponent';
 import AdaptiveQuiz from '@/components/adaptive/AdaptiveQuiz';
@@ -10,6 +12,8 @@ import { selectDynamicMCQs } from '@/lib/engine/mcq-engine';
 
 export default function LearnPage({ params }: { params: Promise<{ courseId: string }> }) {
     const { courseId } = React.use(params);
+    const router = useRouter();
+    const { showToast } = useToast();
     const { state, currentCourse, currentTopic, submitProgress, initializeCourse, isLoading } = useLearningState();
     const [confidence, setConfidence] = useState(0.5);
     const [showQuiz, setShowQuiz] = useState(false);
@@ -23,32 +27,55 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
 
     useEffect(() => {
         if (showQuiz && currentTopic && currentCourse) {
-            // Find current module
-            const module = currentCourse.modules.find(m => m.topics.some(t => t.id === currentTopic.id));
-            if (module && module.mcqs.length > 0) {
+            // Find current module safely
+            const module = currentCourse.modules.find(m =>
+                (m.topics && m.topics.some(t => t.id === currentTopic.id)) ||
+                m.id === currentTopic.id ||
+                m.title === currentTopic.title // Fallback for synthetic mapping
+            );
+
+            if (module && module.mcqs && module.mcqs.length > 0) {
                 const stateForEngine = {
                     masteryTags: {},
                     recentConfidence: []
                 };
                 const picked = selectDynamicMCQs(module.mcqs, stateForEngine, 1);
                 setSelectedMCQs(picked);
-            } else if (module) {
-                // If no MCQs in this module, generate a dummy one or skip
+            } else {
+                // If no MCQs in this module (or AI course), generate a generic adaptive check
                 setSelectedMCQs([{
-                    id: 'dummy',
-                    question: `Adaptive Check: Do you feel ready to advance in ${currentTopic.title}?`,
+                    id: 'adaptive-check',
+                    question: `Adaptive Check: Do you feel ready to advance in "${currentTopic.title}"?`,
                     options: ['Yes, absolutely', 'I need more practice'],
                     correctIndex: 0,
                     difficulty: 'basic',
-                    explanation: 'Self-assessment verified.'
+                    explanation: 'Self-assessment is a key part of the learning loop.'
                 }]);
             }
         }
     }, [showQuiz, currentTopic, currentCourse]);
 
-    if (isLoading || !state) return <div className="loader">Initializing Cognitive Engine for {courseId}...</div>;
+    if (isLoading || !state) {
+        return (
+            <div className={styles.learnContainer}>
+                <header className={styles.learnHeader}>
+                    <LoadingSkeleton type="text" count={2} />
+                </header>
+                <div className={styles.mainLayout}>
+                    <section className={`${styles.content} glass`}>
+                        <LoadingSkeleton type="text" count={6} />
+                    </section>
+                    <aside className={styles.controls}>
+                        <div className={`${styles.glassCard}`}>
+                            <LoadingSkeleton type="card" count={1} />
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        );
+    }
 
-    // Check if course has modules, if not, it's an empty/incomplete course
+    // Check if course has modules
     if (!currentCourse?.modules || currentCourse.modules.length === 0) {
         return (
             <div className={styles.mainLayout} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
@@ -58,7 +85,7 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
                         This intelligence unit is currently empty.
                         <br />It may have failed generation or is pending content injection.
                     </p>
-                    <button className="btn-secondary" onClick={() => window.history.back()} style={{ marginTop: '2rem' }}>
+                    <button className="btn-secondary" onClick={() => router.back()} style={{ marginTop: '2rem' }}>
                         Go Back
                     </button>
                 </div>
@@ -82,7 +109,7 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
                 >
                     Reset Progress & Restart
                 </button>
-                <button className="btn-secondary" onClick={() => window.location.href = '/student'}>
+                <button className="btn-secondary" onClick={() => router.push('/student')}>
                     Back to Dashboard
                 </button>
             </div>
@@ -94,19 +121,31 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
         const normalizedConfidence = avgConfidence / 5;
         submitProgress(currentTopic.id, normalizedConfidence, score);
         setShowQuiz(false);
+        showToast('Progress recorded. Adapting path...', 'success');
     };
+
+    // Calculate progress helper
+    const calculateTotalTopics = () => {
+        return currentCourse.modules.reduce((acc, m) => acc + (m.topics?.length || 1), 0);
+    };
+
+    const totalTopics = calculateTotalTopics();
+    const masteredCount = Object.keys(state.topicMastery).length;
+    const progressPercent = Math.min(100, (masteredCount / totalTopics) * 100);
 
     return (
         <div className={styles.learnContainer}>
             <header className={styles.learnHeader}>
                 <div className={`${styles.topicBadge} animate-slide-up`}>
-                    Unit: {currentCourse?.modules.find(m => m.topics.some(t => t.id === currentTopic.id))?.title || 'Learning'}
+                    Unit: {currentCourse?.modules.find(m =>
+                        (m.topics && m.topics.some(t => t.id === currentTopic.id)) || m.title === currentTopic.title
+                    )?.title || 'Learning'}
                 </div>
                 <h1 className="outfit animate-slide-up" style={{ animationDelay: '0.1s' }}>{currentTopic.title}</h1>
                 <div className={`${styles.progressBar} animate-slide-up`} style={{ animationDelay: '0.2s' }}>
                     <div
                         className={styles.progressFill}
-                        style={{ width: `${(Object.keys(state.topicMastery).length / (currentCourse?.modules.reduce((acc, m) => acc + m.topics.length, 0) || 1)) * 100}%` }}
+                        style={{ width: `${progressPercent}%` }}
                     />
                 </div>
             </header>
@@ -114,12 +153,13 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
             <div className={styles.mainLayout}>
                 <section className={`${styles.content} glass`}>
                     <div className={styles.textContent}>
-                        {currentTopic.content}
+                        <div dangerouslySetInnerHTML={{ __html: currentTopic.content || '' }} />
+
                         <div style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
-                            <p><strong>Scenario:</strong> Imagine you are testing a banking application...</p>
+                            <p><strong>Scenario:</strong> Apply this concept to a real-world problem.</p>
                         </div>
 
-                        {/* Phase 7: Lab Gating Logic */}
+                        {/* Lab Gating Logic */}
                         {(state.topicMastery[currentTopic.id] || false) ? (
                             <div className="animate-fade-in" style={{ marginTop: '3rem' }}>
                                 <div style={{ marginBottom: '1rem', padding: '0.8rem', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid var(--success)', borderRadius: '8px', color: 'var(--success)', fontSize: '0.9rem' }}>
