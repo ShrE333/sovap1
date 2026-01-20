@@ -11,6 +11,7 @@ interface LearningContextType {
     submitProgress: (topicId: string, confidence: number, score: number) => void;
     initializeCourse: (courseId: string) => Promise<void>;
     isLoading: boolean;
+    setCurrentTopic: (topic: Topic) => void;
 }
 
 const LearningStateContext = createContext<LearningContextType | undefined>(undefined);
@@ -99,7 +100,8 @@ export function LearningStateProvider({ children }: { children: React.ReactNode 
             currentTopic,
             submitProgress,
             initializeCourse,
-            isLoading
+            isLoading,
+            setCurrentTopic // Exposed for sidebar navigation
         }}>
             {children}
         </LearningStateContext.Provider>

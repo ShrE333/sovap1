@@ -55,6 +55,9 @@
 - ✅ Implemented Markdown Rendering for course content (via `react-markdown`)
 - ✅ Fixed "stuck" state in Knowledge Verification quiz
 - ✅ Auto-publish courses (no manual approval needed)
+- ✅ **Fixed JSON Content Display**: Parsed raw AI output to show formatted lessons
+- ✅ **Added Course Sidebar**: Full module visibility and navigation
+- ✅ **Adaptive Reteaching**: Low scores trigger "Simplified Review Mode"
 
 ---
 
