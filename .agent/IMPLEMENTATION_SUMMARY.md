@@ -64,6 +64,8 @@
 - ✅ **Course Deletion Fixed**: Restored delete button for teachers and purge for admins
 - ✅ **College Dashboard Restore**: Re-enabled Logic Unit approval/rejection panel
 - ✅ **Backend Logic Complete**: Phase 0 (Baseline Save) -> Phase 6 (Adaptive MCQs) linked. Phase 4 (RAG) stubbed.
+- ✅ **Mastery Logic Fixed**: Corrected score threshold bug (0.6 vs 60) preventing progress.
+- ✅ **Content Loading Fixed**: Added fallbacks for AI content fields.
 
 ---
 

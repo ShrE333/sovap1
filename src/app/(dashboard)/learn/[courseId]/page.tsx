@@ -157,8 +157,8 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
         const normalizedConfidence = avgConfidence / 5;
 
         // Adaptive Logic: Check for Failure
-        // If score is low (< 60%), we intervene
-        if (score < 60) {
+        // Score is 0-1. If < 0.6 (60%), we intervene
+        if (score < 0.6) {
             setStudyMode('simplified');
             setShowQuiz(false);
             showToast('Understanding gap detected. Switching to Simplified Review Mode.', 'warning');

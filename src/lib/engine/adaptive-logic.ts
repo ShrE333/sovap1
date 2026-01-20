@@ -24,7 +24,7 @@ export function getNextTopic(state: StudentLearningState, course: Course): Topic
             id: module.id || `module-${idx}`,
             title: module.title,
             description: (module as any).theory?.substring(0, 200) || '',
-            content: (module as any).theory || '',
+            content: (module as any).content || (module as any).theory || (module as any).body || (module as any).description || '',
             prerequisites: idx > 0 ? [module.id || `module-${idx - 1}`] : [],
             estimatedTime: 45 // Default 45 minutes per module
         }));
