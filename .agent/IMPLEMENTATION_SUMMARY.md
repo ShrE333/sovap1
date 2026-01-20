@@ -52,6 +52,8 @@
 - ✅ Empty course detection with proper error messages
 - ✅ Reset progress option for stuck courses
 - ✅ Fixed critical crash in `LearnPage` for AI-generated courses (missing `topics` array handled safest)
+- ✅ Implemented Markdown Rendering for course content (via `react-markdown`)
+- ✅ Fixed "stuck" state in Knowledge Verification quiz
 - ✅ Auto-publish courses (no manual approval needed)
 
 ---

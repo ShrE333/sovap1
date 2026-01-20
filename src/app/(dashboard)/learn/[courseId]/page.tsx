@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
 import { useLearningState } from '@/lib/contexts/LearningStateContext';
 import { useToast } from '@/lib/contexts/ToastContext';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
@@ -27,11 +28,13 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
 
     useEffect(() => {
         if (showQuiz && currentTopic && currentCourse) {
+            let foundQuestions: any[] = [];
+
             // Find current module safely
             const module = currentCourse.modules.find(m =>
                 (m.topics && m.topics.some(t => t.id === currentTopic.id)) ||
                 m.id === currentTopic.id ||
-                m.title === currentTopic.title // Fallback for synthetic mapping
+                m.title === currentTopic.title
             );
 
             if (module && module.mcqs && module.mcqs.length > 0) {
@@ -39,8 +42,12 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
                     masteryTags: {},
                     recentConfidence: []
                 };
-                const picked = selectDynamicMCQs(module.mcqs, stateForEngine, 1);
-                setSelectedMCQs(picked);
+                foundQuestions = selectDynamicMCQs(module.mcqs, stateForEngine, 1);
+            }
+
+            // Apply selection or fallback
+            if (foundQuestions.length > 0) {
+                setSelectedMCQs(foundQuestions);
             } else {
                 // If no MCQs in this module (or AI course), generate a generic adaptive check
                 setSelectedMCQs([{
@@ -152,28 +159,28 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
 
             <div className={styles.mainLayout}>
                 <section className={`${styles.content} glass`}>
-                    <div className={styles.textContent}>
-                        <div dangerouslySetInnerHTML={{ __html: currentTopic.content || '' }} />
-
-                        <div style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
-                            <p><strong>Scenario:</strong> Apply this concept to a real-world problem.</p>
-                        </div>
-
-                        {/* Lab Gating Logic */}
-                        {(state.topicMastery[currentTopic.id] || false) ? (
-                            <div className="animate-fade-in" style={{ marginTop: '3rem' }}>
-                                <div style={{ marginBottom: '1rem', padding: '0.8rem', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid var(--success)', borderRadius: '8px', color: 'var(--success)', fontSize: '0.9rem' }}>
-                                    ✨ Mastery Verified: Lab Unlocked
-                                </div>
-                                <LabComponent labId={currentTopic.id} />
-                            </div>
-                        ) : (
-                            <div style={{ marginTop: '3rem', padding: '2rem', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--glass-border)', borderRadius: '12px', textAlign: 'center' }}>
-                                <p style={{ color: 'var(--text-muted)' }}>🔒 Hands-on Lab is locked.</p>
-                                <p style={{ fontSize: '0.8rem' }}>Complete the <strong>Knowledge Verification</strong> with high confidence to unlock.</p>
-                            </div>
-                        )}
+                    <div className={styles.markdownContent}>
+                        <ReactMarkdown>{currentTopic.content}</ReactMarkdown>
                     </div>
+
+                    <div style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                        <p><strong>Scenario:</strong> Apply this concept to a real-world problem.</p>
+                    </div>
+
+                    {/* Lab Gating Logic */}
+                    {(state.topicMastery[currentTopic.id] || false) ? (
+                        <div className="animate-fade-in" style={{ marginTop: '3rem' }}>
+                            <div style={{ marginBottom: '1rem', padding: '0.8rem', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid var(--success)', borderRadius: '8px', color: 'var(--success)', fontSize: '0.9rem' }}>
+                                ✨ Mastery Verified: Lab Unlocked
+                            </div>
+                            <LabComponent labId={currentTopic.id} />
+                        </div>
+                    ) : (
+                        <div style={{ marginTop: '3rem', padding: '2rem', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--glass-border)', borderRadius: '12px', textAlign: 'center' }}>
+                            <p style={{ color: 'var(--text-muted)' }}>🔒 Hands-on Lab is locked.</p>
+                            <p style={{ fontSize: '0.8rem' }}>Complete the <strong>Knowledge Verification</strong> with high confidence to unlock.</p>
+                        </div>
+                    )}
                 </section>
 
                 <aside className={styles.controls}>
