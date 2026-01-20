@@ -74,6 +74,12 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
         const checkPreTest = async () => {
             if (!user) return;
 
+            // Skip check for teachers
+            if (user.role === 'teacher') {
+                setIsCheckingPreTest(false);
+                return;
+            }
+
             try {
                 // Fetch enrollment details
                 // Use a direct query or helper if available. 
@@ -189,6 +195,22 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
             window.scrollTo(0, 0);
         }
     };
+
+    const getTopicNavigation = () => {
+        if (!currentCourse || !currentTopic) return { prev: null, next: null };
+        const allTopics: any[] = [];
+        currentCourse.modules.forEach(m => {
+            if (m.topics) allTopics.push(...m.topics);
+            else allTopics.push(m);
+        });
+
+        const currentIndex = allTopics.findIndex(t => t.id === currentTopic.id);
+        const prev = currentIndex > 0 ? allTopics[currentIndex - 1] : null;
+        const next = currentIndex < allTopics.length - 1 ? allTopics[currentIndex + 1] : null;
+        return { prev, next };
+    };
+
+    const { prev, next } = getTopicNavigation();
 
     if (isLoading || !state || !currentCourse) {
         return (
@@ -346,6 +368,49 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
                                     <p style={{ fontSize: '0.8rem' }}>Complete the <strong>Knowledge Verification</strong> with high confidence to unlock.</p>
                                 </div>
                             )}
+
+                            {/* Navigation Controls */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid var(--glass-border)' }}>
+                                {prev ? (
+                                    <button
+                                        className="btn-secondary"
+                                        onClick={() => handleTopicSelect(prev.id)}
+                                    >
+                                        ← Previous: {prev.title}
+                                    </button>
+                                ) : (
+                                    <div /> /* Spacer */
+                                )}
+
+                                {next ? (
+                                    <button
+                                        className="btn-primary"
+                                        // Only disable if current topic not mastered? NO, let them peek, but maybe warn.
+                                        // For now, allow free navigation if sidebar allows it. 
+                                        // But usually next is locked? 
+                                        // Adaptive learning: We usually allow linear progression.
+                                        onClick={() => handleTopicSelect(next.id)}
+                                        disabled={!state.topicMastery[currentTopic.id] && false} // Currently allowing peek
+                                        style={{ opacity: !state.topicMastery[currentTopic.id] ? 0.8 : 1 }}
+                                    >
+                                        Next: {next.title} →
+                                    </button>
+                                ) : (
+                                    <button
+                                        className="btn-primary"
+                                        onClick={() => {
+                                            if (state.topicMastery[currentTopic.id]) {
+                                                // Trigger completion
+                                                setCurrentTopic(null as any); // Shows completion screen
+                                            } else {
+                                                showToast('Please verify your understanding first!', 'warning');
+                                            }
+                                        }}
+                                    >
+                                        Finish Course 🏁
+                                    </button>
+                                )}
+                            </div>
                         </section>
 
                         <aside className={styles.controls}>

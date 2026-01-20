@@ -28,6 +28,7 @@ export default function TeacherCourseDetail({ params }: { params: Promise<{ id: 
     const { showToast } = useToast();
     const [course, setCourse] = useState<CourseDetail | null>(null);
     const [loading, setLoading] = useState(true);
+    const [expandedModule, setExpandedModule] = useState<number | null>(null);
 
     useEffect(() => {
         loadCourseData();
@@ -101,7 +102,7 @@ export default function TeacherCourseDetail({ params }: { params: Promise<{ id: 
                     <p className={styles.subtext}>{course.description}</p>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                    <Link href={`/learn/${courseId}`} className="btn-secondary">
+                    <Link href={`/learn/${courseId}`} className="btn-secondary" target="_blank">
                         👁️ Student Preview
                     </Link>
                     <button className="btn-primary" onClick={() => showToast('Edit feature coming soon!', 'info')}>
@@ -137,21 +138,39 @@ export default function TeacherCourseDetail({ params }: { params: Promise<{ id: 
                     ) : (
                         <div className={styles.moduleList}>
                             {course.modules.map((mod, idx) => (
-                                <div key={idx} className={styles.moduleItem}>
-                                    <div>
-                                        <div className={styles.moduleTitle}>
-                                            {idx + 1}. {mod.title}
+                                <div key={idx} style={{ display: 'flex', flexDirection: 'column', background: 'var(--bg-surface)', border: '1px solid var(--glass-border)', borderRadius: '8px', marginBottom: '1rem', overflow: 'hidden' }}>
+                                    <div className={styles.moduleItem} style={{ border: 'none', background: 'transparent' }}>
+                                        <div>
+                                            <div className={styles.moduleTitle}>
+                                                {idx + 1}. {mod.title}
+                                            </div>
+                                            <div className={styles.moduleMeta}>
+                                                {mod.subtopics?.length || 0} Topics • {mod.mcqs?.length || 0} MCQs
+                                            </div>
                                         </div>
-                                        <div className={styles.moduleMeta}>
-                                            {mod.subtopics?.length || 0} Topics • {mod.mcqs?.length || 0} MCQs
-                                        </div>
+                                        <button
+                                            className="btn-ghost small"
+                                            onClick={() => setExpandedModule(expandedModule === idx ? null : idx)}
+                                        >
+                                            {expandedModule === idx ? 'Hide Details' : 'View Details'}
+                                        </button>
                                     </div>
-                                    <button className="btn-ghost small">View Details</button>
+                                    {expandedModule === idx && (
+                                        <div className={styles.moduleDetails} style={{ padding: '1rem', borderTop: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.2)' }}>
+                                            <h4 style={{ marginBottom: '0.5rem', color: 'var(--brand-teal)' }}>Subtopics</h4>
+                                            <ul style={{ paddingLeft: '1.5rem', marginLeft: '1rem', color: 'var(--text-secondary)' }}>
+                                                {mod.subtopics?.map((sub, i) => (
+                                                    <li key={i}>{typeof sub === 'string' ? sub : (sub as any).title}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
-                    )}
-                </section>
+                    )
+                    }
+                </section >
 
                 <aside>
                     <div className={styles.sectionHeader}>
@@ -193,7 +212,7 @@ export default function TeacherCourseDetail({ params }: { params: Promise<{ id: 
                         </a>
                     </div>
                 </aside>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

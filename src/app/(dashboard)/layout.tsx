@@ -112,11 +112,13 @@ export default function DashboardLayout({
 }: {
     children: React.ReactNode;
 }) {
+    const pathname = usePathname();
+
     return (
         <ClientWrapper>
             <div className={styles.dashboardLayout}>
-                <Sidebar />
-                <main className={styles.content}>
+                {!pathname?.startsWith('/learn') && <Sidebar />}
+                <main className={pathname?.startsWith('/learn') ? styles.fullContent : styles.content}>
                     <div className="container">
                         {children}
                     </div>
