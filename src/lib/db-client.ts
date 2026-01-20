@@ -281,6 +281,9 @@ export const dbClient = {
 
     async deleteCourse(id: string) {
         if (USE_MOCK) {
+            // Cascade delete enrollments
+            db.enrollments = db.enrollments.filter(e => e.course_id !== id);
+
             const index = db.courses.findIndex(c => c.id === id);
             if (index === -1) return;
             db.courses.splice(index, 1);
@@ -288,6 +291,10 @@ export const dbClient = {
             return;
         }
         if (!supabaseAdmin) throw new Error('Supabase not configured');
+
+        // Cascade delete enrollments (if not handled by DB constraint)
+        await supabaseAdmin.from('enrollments').delete().eq('course_id', id);
+
         const { error } = await supabaseAdmin.from('courses').delete().eq('id', id);
         if (error) throw error;
     },
