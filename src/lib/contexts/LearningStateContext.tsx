@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { StudentLearningState, Topic, Course } from '../types';
 import { getNextTopic, updateStateAfterAttempt } from '../engine/adaptive-logic';
