@@ -82,7 +82,8 @@ export function LearningStateProvider({ children }: { children: React.ReactNode 
         }
     };
 
-    const submitProgress = (topicId: string, confidence: number, score: number) => {
+
+    const submitProgress = async (topicId: string, confidence: number, score: number) => {
         if (!state || !currentCourse) return;
 
         const newState = updateStateAfterAttempt(state, topicId, confidence, score);
@@ -90,8 +91,36 @@ export function LearningStateProvider({ children }: { children: React.ReactNode 
         localStorage.setItem(`sovap_state_${state.courseId}`, JSON.stringify(newState));
 
         // Calculate next topic
-        setCurrentTopic(getNextTopic(newState, currentCourse));
+        const nextTopic = getNextTopic(newState, currentCourse);
+        setCurrentTopic(nextTopic);
+
+        // Sync progress to server
+        try {
+            const totalTopics = currentCourse.modules.reduce((acc, m) => acc + (m.topics?.length || 1), 0);
+            const masteredCount = Object.keys(newState.topicMastery).length;
+            const progressPercent = Math.min(100, Math.round((masteredCount / totalTopics) * 100));
+
+            const token = sessionStorage.getItem('sovap_token');
+            if (token) {
+                await fetch('/api/enrollments/update', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        courseId: state.courseId,
+                        progress: progressPercent,
+                        currentTopic: nextTopic?.id || null
+                    })
+                });
+            }
+        } catch (error) {
+            console.error('Failed to sync progress to server:', error);
+            // Don't block the UI if sync fails
+        }
     };
+
 
     return (
         <LearningStateContext.Provider value={{

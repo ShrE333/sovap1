@@ -365,5 +365,45 @@ export const dbClient = {
             return existing[0]; // Already enrolled
         }
         return await this.createEnrollment({ user_id: userId, course_id: courseId });
+    },
+
+    async updateEnrollment(userId: string, courseId: string, updates: { progress?: number; status?: 'active' | 'completed'; current_topic?: string }) {
+        if (USE_MOCK) {
+            const index = db.enrollments.findIndex(e => e.user_id === userId && e.course_id === courseId);
+            if (index === -1) throw new Error('Enrollment not found');
+            db.enrollments[index] = { ...db.enrollments[index], ...updates };
+            saveDb();
+            return db.enrollments[index];
+        }
+        if (!supabaseAdmin) throw new Error('Supabase not configured');
+
+        // Find enrollment by student_id and course_id
+        const { data: enrollments } = await supabaseAdmin
+            .from('enrollments')
+            .select('*')
+            .eq('student_id', userId)
+            .eq('course_id', courseId);
+
+        if (!enrollments || enrollments.length === 0) {
+            throw new Error('Enrollment not found');
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('enrollments')
+            .update(updates)
+            .eq('student_id', userId)
+            .eq('course_id', courseId)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Supabase updateEnrollment error:', error);
+            throw error;
+        }
+
+        return {
+            ...data,
+            user_id: data.student_id
+        };
     }
 };
