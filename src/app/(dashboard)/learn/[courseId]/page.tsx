@@ -15,17 +15,27 @@ import { CourseSidebar } from '@/components/CourseSidebar';
 
 // Helper to parse potentially JSON-embedded content (from AI generation)
 const parseContent = (content: string) => {
-    if (!content) return '';
+    if (!content || content.trim() === '') {
+        return '⚠️ **Content missing or failed to load.** Please contact your instructor or try refreshing the page.';
+    }
+
     try {
         const trimmed = content.trim();
         // If it starts with { and ends with }, it might be JSON
         if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
             const parsed = JSON.parse(trimmed);
             // Return 'theory' or 'content' field if available
-            return parsed.theory || parsed.content || content;
+            const extracted = parsed.theory || parsed.content || '';
+
+            if (!extracted || extracted.trim() === '') {
+                return '⚠️ **Theory content is empty in this module.** The course may be incomplete.';
+            }
+
+            return extracted;
         }
     } catch (e) {
-        // Parsing failed, return as is (likely just markdown)
+        console.error('Content parsing error:', e);
+        // If JSON parse failed but content exists, return it as-is (likely markdown)
     }
     return content;
 };
@@ -50,6 +60,7 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
     const [selectedMCQs, setSelectedMCQs] = useState<any[]>([]);
     const [isCheckingPreTest, setIsCheckingPreTest] = useState(true);
     const [studyMode, setStudyMode] = useState<'standard' | 'simplified'>('standard');
+    const [sidebarVisible, setSidebarVisible] = useState(false); // Hidden by default
 
     // 1. Initialize Course
     useEffect(() => {
@@ -256,18 +267,37 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
 
     return (
         <div className={styles.pageWrapper}>
-            <div className={styles.sidebarContainer}>
-                <CourseSidebar
-                    course={currentCourse}
-                    currentTopicId={currentTopic.id}
-                    completedTopicIds={Object.keys(state.topicMastery)}
-                    onTopicSelect={handleTopicSelect}
-                />
-            </div>
+            {sidebarVisible && (
+                <div className={styles.sidebarContainer}>
+                    <CourseSidebar
+                        course={currentCourse}
+                        currentTopicId={currentTopic.id}
+                        completedTopicIds={Object.keys(state.topicMastery)}
+                        onTopicSelect={handleTopicSelect}
+                    />
+                </div>
+            )}
 
             <div className={styles.mainContentContainer}>
                 <div className={styles.learnContainer}>
                     <header className={styles.learnHeader}>
+                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'center' }}>
+                            <button
+                                onClick={() => router.push('/student')}
+                                className="btn-secondary"
+                                style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                            >
+                                ← Back to Dashboard
+                            </button>
+                            <button
+                                onClick={() => setSidebarVisible(!sidebarVisible)}
+                                className="btn-secondary"
+                                style={{ padding: '0.5rem 1rem' }}
+                            >
+                                {sidebarVisible ? '◀ Hide' : '▶ Show'} Course Structure
+                            </button>
+                        </div>
+
                         <div className={`${styles.topicBadge} animate-slide-up`}>
                             Unit: {currentCourse?.modules.find(m =>
                                 (m.topics && m.topics.some(t => t.id === currentTopic.id)) || m.title === currentTopic.title
