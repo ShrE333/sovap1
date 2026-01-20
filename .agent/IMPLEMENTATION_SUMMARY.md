@@ -58,6 +58,7 @@
 - ✅ **Fixed JSON Content Display**: Parsed raw AI output to show formatted lessons
 - ✅ **Added Course Sidebar**: Full module visibility and navigation
 - ✅ **Adaptive Reteaching**: Low scores trigger "Simplified Review Mode"
+- ✅ **Premium UI Overhaul**: Redesigned Landing, Login, Student & Teacher Dashboards with glassmorphism/gradients
 
 ---
 
