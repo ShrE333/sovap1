@@ -1,10 +1,10 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useAuth, apiCall } from '@/lib/contexts/AuthContext';
+import { useToast } from '@/lib/contexts/ToastContext';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { useParams, useRouter } from 'next/navigation';
-import styles from '../../courses.module.css';
 
 interface Question {
     id: string;
@@ -15,6 +15,7 @@ interface Question {
 export default function PreTestPage() {
     const params = useParams();
     const router = useRouter();
+    const { showToast } = useToast();
     const courseId = params.courseId as string;
 
     const [questions, setQuestions] = useState<Question[]>([]);
@@ -30,10 +31,16 @@ export default function PreTestPage() {
     }, []);
 
     const loadPreTest = async () => {
-        const res = await apiCall(`/api/courses/${courseId}/pre-test`);
-        const data = await res.json();
-        setQuestions(data.questions || []);
-        setLoading(false);
+        try {
+            const res = await apiCall(`/api/courses/${courseId}/pre-test`);
+            const data = await res.json();
+            setQuestions(data.questions || []);
+        } catch (error) {
+            console.error('Failed to load pre-test:', error);
+            showToast('Failed to load assessment', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleNext = () => {
@@ -67,19 +74,54 @@ export default function PreTestPage() {
 
             if (res.ok) {
                 const data = await res.json();
-                alert('Diagnostic Complete! Roadmap Generated.');
+                showToast('Diagnostic Complete! Roadmap Generated.', 'success');
                 // In real app, redirect to the learning path
                 router.push(`/learn/${courseId}`);
+            } else {
+                showToast('Failed to submit results. Please try again.', 'error');
             }
         } catch (error) {
             console.error('Submission failed:', error);
+            showToast('Submission failed. Please check your connection.', 'error');
         } finally {
             setSubmitting(false);
         }
     };
 
-    if (loading) return <div className="container">Loading Assessment...</div>;
-    if (submitting) return <div className="container">🚀 Generating your adaptive roadmap...</div>;
+    if (loading) {
+        return (
+            <div className="container" style={{ padding: '2rem', maxWidth: '800px' }}>
+                <LoadingSkeleton type="text" count={1} />
+                <div style={{ marginTop: '2rem' }}>
+                    <LoadingSkeleton type="card" count={1} />
+                </div>
+            </div>
+        );
+    }
+
+    if (questions.length === 0) {
+        return (
+            <div className="container" style={{ padding: '2rem', maxWidth: '800px', textAlign: 'center' }}>
+                <h2>No Assessment Available</h2>
+                <p>This course does not have a pre-test configured.</p>
+                <button className="btn-primary" onClick={() => router.push(`/learn/${courseId}`)} style={{ marginTop: '1rem' }}>
+                    Go to Course
+                </button>
+            </div>
+        );
+    }
+
+    if (submitting) {
+        return (
+            <div className="container" style={{ padding: '2rem', maxWidth: '800px', textAlign: 'center' }}>
+                <h2>🚀 Generating your adaptive roadmap...</h2>
+                <p>Analyzing your knowledge gaps and strengths.</p>
+                <div style={{ marginTop: '2rem' }}>
+                    <LoadingSkeleton type="text" count={3} />
+                </div>
+            </div>
+        );
+    }
 
     const currentQuestion = questions[currentIndex];
 

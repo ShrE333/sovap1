@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import styles from '../teacher.module.css'; // Reusing teacher styles
 import { useAuth, apiCall } from '@/lib/contexts/AuthContext';
+import { useToast } from '@/lib/contexts/ToastContext';
 
 export default function AICourseGenerator() {
     const { user } = useAuth();
+    const { showToast } = useToast();
     const [topic, setTopic] = useState('');
     const [content, setContent] = useState('');
     const [loading, setLoading] = useState(false);
@@ -23,9 +25,10 @@ export default function AICourseGenerator() {
             });
             const data = await res.json();
             setResult(data);
+            showToast('Generation complete!', 'success');
         } catch (error) {
             console.error(error);
-            alert('Generation failed');
+            showToast('Generation failed', 'error');
         } finally {
             setLoading(false);
         }
@@ -109,7 +112,7 @@ export default function AICourseGenerator() {
                         </div>
 
                         <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
-                            <button className="btn-secondary" onClick={() => alert('Saved to draft!')}>💾 Save Verification Draft</button>
+                            <button className="btn-secondary" onClick={() => showToast('Saved to draft!', 'success')}>💾 Save Verification Draft</button>
                         </div>
                     </section>
                 )}

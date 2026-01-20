@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth, apiCall } from '@/lib/contexts/AuthContext';
+import { useToast } from '@/lib/contexts/ToastContext';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import styles from './teacher-course.module.css';
 
 interface Module {
@@ -23,6 +25,7 @@ interface CourseDetail {
 export default function TeacherCourseDetail({ params }: { params: Promise<{ id: string }> }) {
     const { id: courseId } = React.use(params);
     const { user } = useAuth();
+    const { showToast } = useToast();
     const [course, setCourse] = useState<CourseDetail | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -48,12 +51,30 @@ export default function TeacherCourseDetail({ params }: { params: Promise<{ id: 
             });
         } catch (e) {
             console.error(e);
+            showToast('Failed to load course details', 'error');
         } finally {
             setLoading(false);
         }
     };
 
-    if (loading) return <div className="loader">Loading Course Data...</div>;
+    if (loading) {
+        return (
+            <div className={styles.container}>
+                <header className={styles.header}>
+                    <div style={{ height: '24px', width: '100px', background: 'var(--surface-border)', borderRadius: '4px', marginBottom: '1rem' }}></div>
+                    <LoadingSkeleton type="text" count={2} />
+                </header>
+                <div className={styles.statsGrid}>
+                    <div className={styles.statCard}><LoadingSkeleton type="text" count={2} /></div>
+                    <div className={styles.statCard}><LoadingSkeleton type="text" count={2} /></div>
+                    <div className={styles.statCard}><LoadingSkeleton type="text" count={2} /></div>
+                </div>
+                <div className={styles.contentGrid}>
+                    <LoadingSkeleton type="card" count={3} />
+                </div>
+            </div>
+        );
+    }
 
     if (!course) return (
         <div className={styles.container}>
@@ -83,7 +104,7 @@ export default function TeacherCourseDetail({ params }: { params: Promise<{ id: 
                     <Link href={`/learn/${courseId}`} className="btn-secondary">
                         👁️ Student Preview
                     </Link>
-                    <button className="btn-primary" onClick={() => alert('Edit feature coming soon!')}>
+                    <button className="btn-primary" onClick={() => showToast('Edit feature coming soon!', 'info')}>
                         ✏️ Edit Content
                     </button>
                 </div>

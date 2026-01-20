@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth, apiCall } from '@/lib/contexts/AuthContext';
+import { useToast } from '@/lib/contexts/ToastContext';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import styles from './college.module.css';
 
 interface Teacher {
@@ -22,6 +24,7 @@ interface Course {
 
 export default function CollegeDashboard() {
     const { user } = useAuth();
+    const { showToast } = useToast();
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [pendingCourses, setPendingCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(true);
@@ -54,6 +57,7 @@ export default function CollegeDashboard() {
             setPendingCourses(coursesData.courses || []);
         } catch (error) {
             console.error('Failed to load dashboard:', error);
+            showToast('Failed to connect to institutional database.', 'error');
         } finally {
             setLoading(false);
         }
@@ -75,12 +79,13 @@ export default function CollegeDashboard() {
                 setCredentials(data.credentials);
                 await loadDashboard();
                 setNewTeacher({ name: '', email: '', password: '' });
+                showToast('Registration successful.', 'success');
             } else {
-                alert(data.error || 'Failed to add teacher');
+                showToast(data.error || 'Failed to add teacher', 'error');
             }
         } catch (error) {
             console.error('Add teacher error:', error);
-            alert('Failed to add teacher');
+            showToast('Failed to add teacher', 'error');
         } finally {
             setLoading(false);
         }
@@ -95,13 +100,14 @@ export default function CollegeDashboard() {
 
             if (response.ok) {
                 setPendingCourses(prev => prev.filter(c => c.id !== courseId));
-                alert(action === 'approve' ? '✨ Logic Unit Approved!' : 'Logic Unit Rejected');
+                showToast(action === 'approve' ? '✨ Logic Unit Approved!' : 'Logic Unit Rejected', 'success');
             } else {
                 const data = await response.json();
-                alert(data.error || 'Action failed');
+                showToast(data.error || 'Action failed', 'error');
             }
         } catch (error) {
             console.error('Approve error:', error);
+            showToast('An unexpected error occurred.', 'error');
         }
     };
 
@@ -113,20 +119,40 @@ export default function CollegeDashboard() {
             });
             if (response.ok) {
                 setPendingCourses(prev => prev.filter(c => c.id !== courseId));
+                showToast('Intelligence unit purged.', 'info');
             } else {
                 const data = await response.json();
-                alert(data.error || 'Purge failed');
+                showToast(data.error || 'Purge failed', 'error');
             }
         } catch (error) {
             console.error('Delete error:', error);
+            showToast('An unexpected error occurred.', 'error');
         }
     };
 
     if (loading && teachers.length === 0) {
         return (
-            <div className={styles.loadingContainer}>
-                <div className={styles.spinner}></div>
-                <p>Authenticating Institutional Protocols...</p>
+            <div className={styles.container}>
+                <header className={styles.header}>
+                    <div className="animate-slide-up">
+                        <h1 className="outfit">Institution Control</h1>
+                        <p className={styles.subtext}>Authenticating Institutional Protocols...</p>
+                    </div>
+                </header>
+                <div className={styles.statsGrid}>
+                    <div className={styles.statCard}><LoadingSkeleton type="text" count={2} /></div>
+                    <div className={styles.statCard}><LoadingSkeleton type="text" count={2} /></div>
+                    <div className={styles.statCard}><LoadingSkeleton type="text" count={2} /></div>
+                    <div className={styles.statCard}><LoadingSkeleton type="text" count={2} /></div>
+                </div>
+                <section className={styles.panelSection}>
+                    <div className={styles.panelHeader}>
+                        <h2>Faculty Management</h2>
+                    </div>
+                    <div className={`${styles.panelBody} glass`}>
+                        <LoadingSkeleton type="list" count={5} />
+                    </div>
+                </section>
             </div>
         );
     }

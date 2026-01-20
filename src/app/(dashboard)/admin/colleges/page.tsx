@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import styles from '../admin.module.css';
 import { useAuth, apiCall } from '@/lib/contexts/AuthContext';
+import { useToast } from '@/lib/contexts/ToastContext';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 
 interface College {
     id: string;
@@ -22,6 +24,7 @@ interface College {
 
 export default function AdminCollegesPage() {
     const { user } = useAuth();
+    const { showToast } = useToast();
     const [colleges, setColleges] = useState<College[]>([]);
     const [showAddCollege, setShowAddCollege] = useState(false);
     const [showEditCollege, setShowEditCollege] = useState(false);
@@ -37,6 +40,7 @@ export default function AdminCollegesPage() {
         adminName: '',
         licenseCount: 1000,
         coursesLimit: 50,
+        coursesCount: 0,
         licenseExpiry: '',
         status: 'active' as 'active' | 'expired' | 'pending',
     });
@@ -52,6 +56,7 @@ export default function AdminCollegesPage() {
             setColleges(data.colleges || []);
         } catch (error) {
             console.error('Failed to load colleges:', error);
+            showToast('Failed to load colleges', 'error');
         } finally {
             setLoading(false);
         }
@@ -79,20 +84,22 @@ export default function AdminCollegesPage() {
                     adminName: '',
                     licenseCount: 1000,
                     coursesLimit: 50,
+                    coursesCount: 0,
                     licenseExpiry: '',
                     status: 'active',
                 });
+                showToast('College created successfully!', 'success');
             } else {
                 console.error('Create college failed:', data);
                 let errorMessage = data.error || 'Unknown error';
                 if (data.details) {
                     errorMessage += ': ' + JSON.stringify(data.details);
                 }
-                alert(`Failed to create college: ${errorMessage}`);
+                showToast(`Failed to create college: ${errorMessage}`, 'error');
             }
         } catch (error: any) {
             console.error('Create college error:', error);
-            alert(`Failed to create college: ${error.message || 'Network error'}`);
+            showToast(`Failed to create college: ${error.message || 'Network error'}`, 'error');
         } finally {
             setLoading(false);
         }
@@ -122,13 +129,14 @@ export default function AdminCollegesPage() {
                 await loadColleges();
                 setShowEditCollege(false);
                 setSelectedCollege(null);
+                showToast('College updated successfully!', 'success');
             } else {
                 const data = await response.json();
-                alert(data.error || 'Failed to update college');
+                showToast(data.error || 'Failed to update college', 'error');
             }
         } catch (error) {
             console.error('Update college error:', error);
-            alert('Failed to update college');
+            showToast('Failed to update college', 'error');
         } finally {
             setLoading(false);
         }
@@ -143,6 +151,7 @@ export default function AdminCollegesPage() {
             adminName: college.adminName || '',
             licenseCount: college.license_count,
             coursesLimit: college.courses_limit,
+            coursesCount: college.coursesCount || 0,
             licenseExpiry: college.license_expiry.split('T')[0],
             status: college.status as 'active' | 'expired' | 'pending',
         });
@@ -162,59 +171,65 @@ export default function AdminCollegesPage() {
             </header>
 
             <section className={`${styles.panel} glass`}>
-                {loading && <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>}
-
-                {!loading && colleges.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                        No colleges added yet. Click "+ Add College" to get started.
+                {loading ? (
+                    <div style={{ padding: '2rem' }}>
+                        <div className={styles.list}>
+                            <LoadingSkeleton type="card" count={4} />
+                        </div>
                     </div>
-                )}
-
-                {!loading && colleges.length > 0 && (
-                    <div className={styles.list}>
-                        {colleges.map(college => (
-                            <div key={college.id} className={styles.collegeCard}>
-                                <div className={styles.collegeInfo}>
-                                    <strong>{college.name}</strong>
-                                    <div className={styles.statsGrid}>
-                                        <div className={styles.statItem}>
-                                            <span className={styles.label}>Licenses:</span>
-                                            <span className={styles.value}>{college.license_count}</span>
-                                        </div>
-                                        <div className={styles.statItem}>
-                                            <span className={styles.label}>Expires:</span>
-                                            <span className={styles.value}>{new Date(college.license_expiry).toLocaleDateString()}</span>
-                                        </div>
-                                        <div className={styles.statItem}>
-                                            <span className={styles.label}>Teachers:</span>
-                                            <span className={styles.value}>{college.teachersCount || 0}</span>
-                                        </div>
-                                        <div className={styles.statItem}>
-                                            <span className={styles.label}>Students:</span>
-                                            <span className={styles.value}>{college.studentCount || 0}</span>
-                                        </div>
-                                        <div className={styles.statItem}>
-                                            <span className={styles.label}>Courses:</span>
-                                            <span className={styles.value}>{college.coursesCount || 0} / {college.courses_limit}</span>
-                                        </div>
-                                        <div className={styles.statItem}>
-                                            <span className={styles.label}>AI Tokens:</span>
-                                            <span className={styles.value}>{college.aiUsage?.toLocaleString() || '0'}</span>
-                                        </div>
-                                    </div>
-                                    <div className={styles.subText}>
-                                        Admin: {college.adminName} ({college.admin_email})
-                                    </div>
-                                </div>
-                                <span className={`${styles.badge} ${styles[college.status.toLowerCase().replace(/ /g, '')]}`}>
-                                    {college.status}
-                                </span>
-                                <button className="btn-secondary small" onClick={() => openEditModal(college)}>
-                                    Manage
-                                </button>
+                ) : (
+                    <>
+                        {colleges.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                                No colleges added yet. Click "+ Add College" to get started.
                             </div>
-                        ))}
-                    </div>
+                        ) : (
+                            <div className={styles.list}>
+                                {colleges.map(college => (
+                                    <div key={college.id} className={styles.collegeCard}>
+                                        <div className={styles.collegeInfo}>
+                                            <strong>{college.name}</strong>
+                                            <div className={styles.statsGrid}>
+                                                <div className={styles.statItem}>
+                                                    <span className={styles.label}>Licenses:</span>
+                                                    <span className={styles.value}>{college.license_count}</span>
+                                                </div>
+                                                <div className={styles.statItem}>
+                                                    <span className={styles.label}>Expires:</span>
+                                                    <span className={styles.value}>{new Date(college.license_expiry).toLocaleDateString()}</span>
+                                                </div>
+                                                <div className={styles.statItem}>
+                                                    <span className={styles.label}>Teachers:</span>
+                                                    <span className={styles.value}>{college.teachersCount || 0}</span>
+                                                </div>
+                                                <div className={styles.statItem}>
+                                                    <span className={styles.label}>Students:</span>
+                                                    <span className={styles.value}>{college.studentCount || 0}</span>
+                                                </div>
+                                                <div className={styles.statItem}>
+                                                    <span className={styles.label}>Courses:</span>
+                                                    <span className={styles.value}>{college.coursesCount || 0} / {college.courses_limit}</span>
+                                                </div>
+                                                <div className={styles.statItem}>
+                                                    <span className={styles.label}>AI Tokens:</span>
+                                                    <span className={styles.value}>{college.aiUsage?.toLocaleString() || '0'}</span>
+                                                </div>
+                                            </div>
+                                            <div className={styles.subText}>
+                                                Admin: {college.adminName} ({college.admin_email})
+                                            </div>
+                                        </div>
+                                        <span className={`${styles.badge} ${styles[college.status.toLowerCase().replace(/ /g, '')]}`}>
+                                            {college.status}
+                                        </span>
+                                        <button className="btn-secondary small" onClick={() => openEditModal(college)}>
+                                            Manage
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </>
                 )}
             </section>
 
