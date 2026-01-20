@@ -81,12 +81,12 @@
    - Learning page
    - Button sizing
 
-### Phase B: Core Features (2-4 hours)
-1. **Certificate Generation**
-   - PDF creation on course completion
-   - Verification code
-   - Download button on student dashboard
-
+### Phase B: Core Features (Started)
+1. ✅ **Certificate Generation**
+   - ✅ PDF creation on course completion (backend API with `pdfkit`)
+   - ✅ Verification code and unique ID
+   - ✅ Download button on student dashboard & course completion screen
+   
 2. **Real Student Management for Teachers**
    - View enrolled students per course
    - Individual student progress

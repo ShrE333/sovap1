@@ -103,22 +103,56 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
     if (!currentTopic) {
         return (
             <div className="completed" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '1rem' }}>
-                <h1>🎉 Course Completed!</h1>
-                <p>You have mastered all available topics.</p>
-                <button
-                    className="btn-primary"
-                    onClick={() => {
-                        if (confirm('Reset all progress for this course?')) {
-                            localStorage.removeItem(`sovap_state_${courseId}`);
-                            window.location.reload();
-                        }
-                    }}
-                >
-                    Reset Progress & Restart
-                </button>
-                <button className="btn-secondary" onClick={() => router.push('/student')}>
-                    Back to Dashboard
-                </button>
+                <h1 className="gradient-text" style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉 Course Completed!</h1>
+                <p className="text-xl text-center mb-8">You have mastered all available topics.</p>
+
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <button
+                        className="btn-primary"
+                        onClick={async () => {
+                            showToast('Generating certificate...', 'info');
+                            try {
+                                const response = await fetch(`/api/certificates/generate?courseId=${courseId}`, {
+                                    headers: { 'Authorization': `Bearer ${sessionStorage.getItem('sovap_token')}` }
+                                });
+                                if (!response.ok) throw new Error('Download failed');
+
+                                const blob = await response.blob();
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.style.display = 'none';
+                                a.href = url;
+                                a.download = `Certificate_${currentCourse?.title?.replace(/\s+/g, '_') || 'Course'}.pdf`;
+                                document.body.appendChild(a);
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                                document.body.removeChild(a);
+                                showToast('Certificate downloaded!', 'success');
+                            } catch (e) {
+                                console.error(e);
+                                showToast('Failed to download certificate', 'error');
+                            }
+                        }}
+                    >
+                        📜 Download Certificate
+                    </button>
+
+                    <button
+                        className="btn-secondary"
+                        onClick={() => {
+                            if (confirm('Reset all progress for this course?')) {
+                                localStorage.removeItem(`sovap_state_${courseId}`);
+                                window.location.reload();
+                            }
+                        }}
+                    >
+                        Reset Progress & Restart
+                    </button>
+
+                    <button className="btn-secondary" onClick={() => router.push('/student')}>
+                        Back to Dashboard
+                    </button>
+                </div>
             </div>
         );
     }
