@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useToast } from '@/lib/contexts/ToastContext';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { useAuth, apiCall } from '@/lib/contexts/AuthContext';
 import styles from './teacher.module.css';
 
@@ -32,6 +34,7 @@ interface DashboardStats {
 
 export default function TeacherPage() {
     const { user } = useAuth();
+    const { showToast } = useToast();
     const [stats, setStats] = useState<DashboardStats>({ activeStudents: 0, avgConfidence: 0, completionRate: 0 });
     const [students, setStudents] = useState<Student[]>([]);
     const [courses, setCourses] = useState<Course[]>([]);
@@ -76,13 +79,14 @@ export default function TeacherPage() {
                 method: 'POST'
             });
             if (res.ok) {
-                alert('✨ Course cloned and adapted successfully!');
+                showToast('✨ Course cloned and adapted successfully!', 'success');
                 loadDashboard();
             } else {
-                alert('Failed to clone course.');
+                showToast('Failed to clone course.', 'error');
             }
         } catch (error) {
             console.error('Clone error:', error);
+            showToast('Failed to clone course.', 'error');
         }
     };
 
@@ -91,7 +95,7 @@ export default function TeacherPage() {
         if (!file) return;
 
         if (file.type !== 'application/pdf') {
-            alert('Please upload a valid PDF file.');
+            showToast('Please upload a valid PDF file.', 'warning');
             return;
         }
 
@@ -111,15 +115,15 @@ export default function TeacherPage() {
             if (response.ok) {
                 const data = await response.json();
                 setUploadSuccess(data.courseId);
-                alert(`✨ MAGIC SUCCESS! Course generation started for: ${file.name}`);
+                showToast(`✨ MAGIC SUCCESS! Course generation started for: ${file.name}`, 'success');
                 loadDashboard();
             } else {
                 const data = await response.json();
-                alert(`Upload failed: ${data.error || 'Server error'}`);
+                showToast(`Upload failed: ${data.error || 'Server error'}`, 'error');
             }
         } catch (error) {
             console.error('PDF upload error:', error);
-            alert('An unexpected error occurred during upload.');
+            showToast('An unexpected error occurred during upload.', 'error');
         } finally {
             setIsUploading(false);
         }
@@ -138,16 +142,17 @@ export default function TeacherPage() {
             });
 
             if (response.ok) {
-                alert('✨ MAGIC SUCCESS! Course generation started. It will appear on your dashboard as "Generating" and then "Live" automatically.');
+                showToast('✨ Course generation started! It will appear as "Generating" momentarily.', 'success');
                 setShowCreateCourse(false);
                 setNewCourse({ title: '', description: '', estimatedHours: 10 });
                 loadDashboard();
             } else {
                 const data = await response.json();
-                alert(`Failed: ${data.error || 'Unknown error'}`);
+                showToast(`Failed: ${data.error || 'Unknown error'}`, 'error');
             }
         } catch (error) {
             console.error('Create course error:', error);
+            showToast('Failed to start course generation.', 'error');
         } finally {
             setLoading(false);
         }
@@ -162,21 +167,63 @@ export default function TeacherPage() {
             });
 
             if (response.ok) {
+                showToast('Course deleted successfully.', 'info');
                 loadDashboard();
             } else {
                 const data = await response.json();
-                alert(data.error || 'Failed to delete course');
+                showToast(data.error || 'Failed to delete course', 'error');
             }
         } catch (error) {
             console.error('Delete error:', error);
+            showToast('An error occurred while deleting the course.', 'error');
         }
     };
 
+
     if (loading && !stats.activeStudents && courses.length === 0) {
         return (
-            <div className={styles.loadingContainer}>
-                <div className={styles.spinner}></div>
-                <p>Establishing secure connection to Faculty Workbench...</p>
+            <div className={styles.container}>
+                <header className={styles.header}>
+                    <div className="animate-slide-up">
+                        <h1 className="outfit">Faculty Workbench</h1>
+                        <p className={styles.subtext}>Establishing secure connection...</p>
+                    </div>
+                </header>
+
+                {/* Stats Panel Skeleton */}
+                <section className={styles.statsGrid}>
+                    <div className={`${styles.statCard} glass-card`}>
+                        <LoadingSkeleton type="text" count={2} />
+                    </div>
+                    <div className={`${styles.statCard} glass-card`}>
+                        <LoadingSkeleton type="text" count={2} />
+                    </div>
+                    <div className={`${styles.statCard} glass-card`}>
+                        <LoadingSkeleton type="text" count={2} />
+                    </div>
+                </section>
+
+                <div className={styles.dashboardGrid}>
+                    {/* Courses Section Skeleton */}
+                    <section className={styles.mainSection}>
+                        <div className={styles.sectionHeader}>
+                            <h2>Your Active Intelligence Units</h2>
+                        </div>
+                        <div className={styles.courseList}>
+                            <LoadingSkeleton type="card" count={3} />
+                        </div>
+                    </section>
+
+                    {/* Students Activity Section Skeleton */}
+                    <section className={styles.sideSection}>
+                        <div className={styles.sectionHeader}>
+                            <h2>Real-time Activity</h2>
+                        </div>
+                        <div className={`${styles.activityList} glass`}>
+                            <LoadingSkeleton type="list" count={5} />
+                        </div>
+                    </section>
+                </div>
             </div>
         );
     }

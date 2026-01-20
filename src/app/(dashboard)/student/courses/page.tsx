@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth, apiCall } from '@/lib/contexts/AuthContext';
-import styles from '../student-dashboard.module.css'; // Re-use styles
+import { useToast } from '@/lib/contexts/ToastContext';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import styles from '../student-dashboard.module.css';
 
 interface Course {
     id: string;
@@ -16,6 +19,8 @@ interface Course {
 
 export default function StudentCoursesPage() {
     const { user } = useAuth();
+    const router = useRouter();
+    const { showToast } = useToast();
     const [courses, setCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(true);
     const [enrollingId, setEnrollingId] = useState<string | null>(null);
@@ -35,6 +40,7 @@ export default function StudentCoursesPage() {
             }
         } catch (error) {
             console.error('Failed to load courses', error);
+            showToast('Failed to load courses', 'error');
         } finally {
             setLoading(false);
         }
@@ -45,19 +51,33 @@ export default function StudentCoursesPage() {
         try {
             const res = await apiCall(`/api/courses/${courseId}/enroll`, { method: 'POST' });
             if (res.ok) {
-                alert('🎉 Successfully enrolled! Redirecting to course...');
-                window.location.href = `/learn/${courseId}`;
+                showToast('🎉 Successfully enrolled! Redirecting to course...', 'success');
+                router.push(`/learn/${courseId}`);
             } else {
-                alert('Enrollment failed. You might already be enrolled.');
+                showToast('Enrollment failed. You might already be enrolled.', 'warning');
             }
         } catch (e) {
-            alert('Something went wrong.');
+            showToast('Something went wrong during enrollment.', 'error');
         } finally {
             setEnrollingId(null);
         }
     };
 
-    if (loading) return <div className={styles.loadingContainer}><div className={styles.spinner}></div></div>;
+    if (loading) {
+        return (
+            <div className={styles.container}>
+                <header className={styles.header}>
+                    <div className="animate-slide-up">
+                        <h1 className="outfit">Course Catalog</h1>
+                        <p className={styles.subtext}>Loading available intelligence units...</p>
+                    </div>
+                </header>
+                <div className={styles.coursesGrid} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', marginTop: '2rem' }}>
+                    <LoadingSkeleton type="card" count={6} />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.container}>
