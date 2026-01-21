@@ -3,12 +3,17 @@
 import { useState } from 'react';
 import styles from './lab.module.css';
 
-export default function LabComponent({ labId }: { labId: string }) {
+export default function LabComponent({ labId, onComplete }: { labId: string, onComplete?: () => void }) {
     const [status, setStatus] = useState<'idle' | 'starting' | 'running' | 'completed'>('idle');
 
     const startLab = () => {
         setStatus('starting');
         setTimeout(() => setStatus('running'), 2000);
+    };
+
+    const handleComplete = () => {
+        setStatus('completed');
+        if (onComplete) onComplete();
     };
 
     return (
@@ -43,7 +48,7 @@ export default function LabComponent({ labId }: { labId: string }) {
                     <div className={styles.instructions}>
                         <h4>Objective</h4>
                         <p>Try to access user 102 without authorization.</p>
-                        <button className="btn-secondary" onClick={() => setStatus('completed')}>Submit Solution</button>
+                        <button className="btn-secondary" onClick={handleComplete}>Submit Solution</button>
                     </div>
                 </div>
             )}

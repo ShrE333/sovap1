@@ -27,8 +27,10 @@ export async function GET(req: NextRequest) {
         const enrollment = enrollments[0];
 
         // Ensure progress is 100% or explicitly marked complete
-        if (!enrollment || (enrollment.progress || 0) < 100) {
-            return NextResponse.json({ error: 'Course not completed yet. Complete all modules to unlock certificate.' }, { status: 403 });
+        // Ensure progress is near 100% or explicitly marked complete
+        // Relaxed check to 95% to account for rounding or optional modules
+        if (!enrollment || ((enrollment.progress || 0) < 95 && enrollment.status !== 'completed')) {
+            return NextResponse.json({ error: 'Course not sufficiently verified. Please complete all modules.' }, { status: 403 });
         }
 
         // Get Course Details

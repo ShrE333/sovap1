@@ -360,7 +360,10 @@ export default function LearnPage({ params }: { params: Promise<{ courseId: stri
                                     <div style={{ marginBottom: '1rem', padding: '0.8rem', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid var(--success)', borderRadius: '8px', color: 'var(--success)', fontSize: '0.9rem' }}>
                                         ✨ Mastery Verified: Lab Unlocked
                                     </div>
-                                    <LabComponent labId={currentTopic.id} />
+                                    <LabComponent
+                                        labId={currentTopic.id}
+                                        onComplete={() => showToast('Lab Passed! Practical Mastery Verified 🏆', 'success')}
+                                    />
                                 </div>
                             ) : (
                                 <div style={{ marginTop: '3rem', padding: '2rem', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--glass-border)', borderRadius: '12px', textAlign: 'center' }}>
