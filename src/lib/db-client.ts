@@ -436,5 +436,53 @@ export const dbClient = {
         }
         // Supabase fallback
         return null;
+    },
+
+    // === AGGREGATE HELPERS ===
+    async getTeacherStudents(teacherId: string) {
+        // 1. Get Teacher's Courses
+        const courses = await this.getCourses({ teacher_id: teacherId });
+        const courseIds = courses.map((c: any) => c.id);
+
+        if (courseIds.length === 0) return [];
+
+        // 2. Get Enrollments for these courses
+        let allEnrollments: any[] = [];
+        if (USE_MOCK) {
+            allEnrollments = db.enrollments.filter(e => courseIds.includes(e.course_id));
+        } else if (supabaseAdmin) {
+            const { data } = await supabaseAdmin.from('enrollments').select('*').in('course_id', courseIds);
+            allEnrollments = data || [];
+        }
+
+        if (allEnrollments.length === 0) return [];
+
+        // 3. Get User Details
+        const studentIds = Array.from(new Set(allEnrollments.map((e: any) => USE_MOCK ? e.user_id : e.student_id)));
+        let students: any[] = [];
+
+        if (USE_MOCK) {
+            students = db.users.filter(u => studentIds.includes(u.id));
+        } else if (supabaseAdmin) {
+            const { data } = await supabaseAdmin.from('users').select('id, name, email, last_active').in('id', studentIds);
+            students = data || [];
+        }
+
+        // 4. Combine Data
+        return students.map(student => {
+            const studentEnrollments = allEnrollments.filter((e: any) => (USE_MOCK ? e.user_id : e.student_id) === student.id);
+            return {
+                ...student,
+                enrolledCourses: studentEnrollments.map((e: any) => {
+                    const course = courses.find((c: any) => c.id === e.course_id);
+                    return {
+                        courseId: e.course_id,
+                        courseTitle: course?.title || 'Unknown',
+                        progress: e.progress || 0,
+                        status: e.status
+                    };
+                })
+            };
+        });
     }
 };

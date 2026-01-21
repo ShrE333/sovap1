@@ -60,6 +60,7 @@
 - ✅ **Adaptive Reteaching**: Low scores trigger "Simplified Review Mode"
 - ✅ **Premium UI Overhaul**: Redesigned Landing, Login, Student & Teacher Dashboards with glassmorphism/gradients
 - ✅ **Focus Mode for Learning**: Auto-hide sidebar during lessons + Next/Prev Topic navigation
+- ✅ **Knowledge Mastery Graph**: Interactive SVG map of concepts and mastery levels
 - ✅ **Teacher Content View**: Added module expansion and fixed Student Preview
 - ✅ **Course Deletion Fixed**: Restored delete button for teachers and purge for admins
 - ✅ **College Dashboard Restore**: Re-enabled Logic Unit approval/rejection panel

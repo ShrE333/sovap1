@@ -18,12 +18,14 @@ function Sidebar() {
         { name: 'Skill Graph', href: '/student/skills', icon: '🕸️' },
         { name: 'Progress', href: '/student/progress', icon: '📊' },
         { name: 'Certificates', href: '/student/certs', icon: '📜' },
+        { name: 'Settings', href: '/settings', icon: '⚙️' },
     ];
 
     const teacherLinks = [
         { name: 'Dashboard', href: '/teacher', icon: '🏠' },
         { name: 'Students', href: '/teacher/students', icon: '👥' },
         { name: 'AI Generator', href: '/teacher/ai', icon: '🤖' },
+        { name: 'Settings', href: '/settings', icon: '⚙️' },
     ];
 
     const collegeLinks = [
@@ -31,12 +33,14 @@ function Sidebar() {
         { name: 'Teachers', href: '/college/teachers', icon: '👨‍🏫' },
         { name: 'Students', href: '/college/students', icon: '👨‍🎓' },
         { name: 'Approvals', href: '/college/approvals', icon: '✅' },
+        { name: 'Settings', href: '/settings', icon: '⚙️' },
     ];
 
     const adminLinks = [
         { name: 'Dashboard', href: '/admin', icon: '🏠' },
         { name: 'Colleges', href: '/admin/colleges', icon: '🏛️' },
         { name: 'AI Models', href: '/admin/ai', icon: '🧠' },
+        { name: 'Settings', href: '/settings', icon: '⚙️' },
     ];
 
     let links = studentLinks;
@@ -65,6 +69,7 @@ function Sidebar() {
                 (role === 'college' && currentPath.startsWith('/college')) ||
                 (role === 'teacher' && currentPath.startsWith('/teacher')) ||
                 (role === 'student' && currentPath.startsWith('/student')) ||
+                currentPath.startsWith('/settings') ||
                 currentPath.startsWith('/learn'); // Allow universal access to learning environment
 
             if (!isAllowed && !isLoading) {
